@@ -1,0 +1,33 @@
+.drum-container {
+    overflow-x: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.drum-svg {
+    background-color: #111;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.drum-label {
+    fill: white;
+    font-size: 14px;
+    font-family: monospace;
+}
+
+.drum-grid {
+    stroke: #444;
+    stroke-width: 1;
+}
+
+.drum-hit {
+    fill: #ffffff;
+    font-size: 18px;
+    font-family: monospace;
+}
+
+.drum-bar {
+    stroke: #888;
+    stroke-width: 2;
+}

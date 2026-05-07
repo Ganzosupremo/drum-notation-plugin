@@ -1,0 +1,9 @@
+{
+  "id": "drum-notation-plugin",
+  "name": "Drum Notation Plugin",
+  "version": "0.0.1",
+  "minAppVersion": "1.5.0",
+  "description": "Render simple drum notation inside Obsidian.",
+  "author": "Denzel Allen",
+  "isDesktopOnly": false
+}
