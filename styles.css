@@ -25,9 +25,19 @@
     fill: #ffffff;
     font-size: 18px;
     font-family: monospace;
+    dominant-baseline: middle;
 }
 
 .drum-bar {
-    stroke: #888;
+    stroke: #ffffff;
+    stroke-width: 3;
+}
+
+.drum-note {
+    stroke: white;
     stroke-width: 2;
+}
+
+.drum-note-fill {
+    fill: white;
 }

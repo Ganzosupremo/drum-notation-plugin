@@ -6,3 +6,14 @@ export interface DrumLine {
 export interface DrumNotation {
     lines: DrumLine[];
 }
+
+export interface NoteEvent {
+
+    instrument: string;
+
+    symbol: string;
+
+    index: number;
+
+    x: number;
+}
