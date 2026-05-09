@@ -1,6 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { parseDrumNotation, buildTimeSignature, isPowerOfTwo } from "./parser";
+import { buildLayout } from "./notation/layout/buildLayout";
 
 describe("inner pipe segment-joining (parseDrumNotation)", () => {
 
@@ -707,5 +708,78 @@ describe("buildTimeSignature helper", () => {
 
         assert.equal(sig.meterType, "simple");
         assert.equal(sig.beatsPerBar, 4);
+    });
+});
+
+describe("buildLayout — HH accent-open articulation parsing", () => {
+
+    test(">o on HH produces articulation 'accent-open'", () => {
+        const { notes } = buildLayout("HH", ">o--");
+
+        assert.equal(notes.length, 1);
+        assert.equal(notes[0]?.articulation, "accent-open");
+        assert.equal(notes[0]?.symbol, "o");
+    });
+
+    test("o^ on HH produces articulation 'accent-open'", () => {
+        const { notes } = buildLayout("HH", "o^--");
+
+        assert.equal(notes.length, 1);
+        assert.equal(notes[0]?.articulation, "accent-open");
+        assert.equal(notes[0]?.symbol, "o");
+    });
+
+    test("plain o on HH produces articulation 'open' (not accent-open)", () => {
+        const { notes } = buildLayout("HH", "o---");
+
+        assert.equal(notes.length, 1);
+        assert.equal(notes[0]?.articulation, "open");
+    });
+
+    test(">x on HH produces articulation 'accent' (not accent-open)", () => {
+        const { notes } = buildLayout("HH", ">x--");
+
+        assert.equal(notes.length, 1);
+        assert.equal(notes[0]?.articulation, "accent");
+        assert.equal(notes[0]?.symbol, "x");
+    });
+
+    test("x^ on HH produces articulation 'accent' (not accent-open)", () => {
+        const { notes } = buildLayout("HH", "x^--");
+
+        assert.equal(notes.length, 1);
+        assert.equal(notes[0]?.articulation, "accent");
+        assert.equal(notes[0]?.symbol, "x");
+    });
+
+    test(">o on SD produces articulation 'accent' (SD does not support open)", () => {
+        const { notes } = buildLayout("SD", ">o--");
+
+        assert.equal(notes.length, 1);
+        assert.equal(notes[0]?.articulation, "accent");
+    });
+
+    test("o^ on SD produces articulation 'accent' (SD does not support open)", () => {
+        const { notes } = buildLayout("SD", "o^--");
+
+        assert.equal(notes.length, 1);
+        assert.equal(notes[0]?.articulation, "accent");
+    });
+
+    test("multiple notes: >o and o^ and o in same HH pattern parse correctly", () => {
+        const { notes } = buildLayout("HH", ">oo^o-");
+
+        assert.equal(notes.length, 3);
+        assert.equal(notes[0]?.articulation, "accent-open");
+        assert.equal(notes[1]?.articulation, "accent-open");
+        assert.equal(notes[2]?.articulation, "open");
+    });
+
+    test(">o and >x in same HH pattern produce correct articulations", () => {
+        const { notes } = buildLayout("HH", ">o>x");
+
+        assert.equal(notes.length, 2);
+        assert.equal(notes[0]?.articulation, "accent-open");
+        assert.equal(notes[1]?.articulation, "accent");
     });
 });
