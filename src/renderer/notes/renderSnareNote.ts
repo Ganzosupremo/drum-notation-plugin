@@ -2,6 +2,8 @@ import { Articulation } from "types";
 
 import { createSVGElement } from "renderer/svgHelper";
 
+import { renderStem } from "../renderStem";
+
 import { renderAccentMark, renderGhostParens } from "../renderArticulationHelpers";
 
 export function renderSnareNote(
@@ -35,8 +37,9 @@ export function renderSnareNote(
     ellipse.classList.add("drum-note-fill");
     svg.appendChild(ellipse);
 
+    renderStem(svg, x, y);
+
     if (articulation === "accent") {
-        // SD has no stem; position the accent just above the notehead top (y - ry - gap).
-        renderAccentMark(svg, x, y, y - 14);
+        renderAccentMark(svg, x, y);
     }
 }
