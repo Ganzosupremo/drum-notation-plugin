@@ -17,6 +17,7 @@ export interface DrumNotation {
     beatsPerBar?: number;
     timeSignature?: TimeSignature;
     subdivisionsPerBeat?: number;
+    feel?: "straight" | "swing" | "triplet";
     warnings?: string[];
 }
 

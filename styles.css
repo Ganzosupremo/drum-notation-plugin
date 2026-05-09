@@ -104,3 +104,10 @@
     stroke: #cccccc;
     stroke-width: 2;
 }
+
+.drum-feel-indicator {
+    fill: #aaaaaa;
+    font-size: 11px;
+    font-family: monospace;
+    font-style: italic;
+}

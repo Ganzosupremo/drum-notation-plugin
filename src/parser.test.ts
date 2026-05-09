@@ -712,6 +712,116 @@ describe("buildTimeSignature helper", () => {
     });
 });
 
+describe("feel / swing directive parsing", () => {
+
+    test("feel: swing in the body sets feel to 'swing'", () => {
+        const source = [
+            "feel: swing",
+            "HH |x-x-x-x-|",
+        ].join("\n");
+        const result = parseDrumNotation(source);
+
+        assert.equal(result.feel, "swing");
+    });
+
+    test("feel swing (space separator) sets feel to 'swing'", () => {
+        const source = [
+            "feel swing",
+            "HH |x-x-x-x-|",
+        ].join("\n");
+        const result = parseDrumNotation(source);
+
+        assert.equal(result.feel, "swing");
+    });
+
+    test("feel: triplet sets feel to 'triplet' and subdivisionsPerBeat to 3", () => {
+        const source = [
+            "feel: triplet",
+            "HH |x-x-x-|",
+        ].join("\n");
+        const result = parseDrumNotation(source);
+
+        assert.equal(result.feel, "triplet");
+        assert.equal(result.subdivisionsPerBeat, 3);
+    });
+
+    test("feel: triplet does not override an explicit subdivisionsPerBeat", () => {
+        const source = [
+            "feel: triplet",
+            "subdiv 6",
+            "HH |x-x-x-|",
+        ].join("\n");
+        const result = parseDrumNotation(source);
+
+        assert.equal(result.feel, "triplet");
+        assert.equal(result.subdivisionsPerBeat, 6);
+    });
+
+    test("feel: straight sets feel to 'straight'", () => {
+        const source = [
+            "feel: straight",
+            "HH |x-x-x-x-|",
+        ].join("\n");
+        const result = parseDrumNotation(source);
+
+        assert.equal(result.feel, "straight");
+    });
+
+    test("standalone swing keyword sets feel to 'swing'", () => {
+        const source = [
+            "swing",
+            "HH |x-x-x-x-|",
+        ].join("\n");
+        const result = parseDrumNotation(source);
+
+        assert.equal(result.feel, "swing");
+    });
+
+    test("inline fence header 'swing' sets feel to 'swing'", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "swing");
+
+        assert.equal(result.feel, "swing");
+    });
+
+    test("no feel directive leaves feel undefined", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|");
+
+        assert.equal(result.feel, undefined);
+    });
+
+    test("unknown feel value emits a warning and leaves feel undefined", () => {
+        const source = [
+            "feel: groovy",
+            "HH |x-x-x-x-|",
+        ].join("\n");
+        const result = parseDrumNotation(source);
+
+        assert.equal(result.feel, undefined);
+        assert.ok(result.warnings && result.warnings.length > 0, "expected a warning");
+        assert.ok(
+            result.warnings?.some(w => w.toLowerCase().includes("groovy")),
+            `expected warning mentioning 'groovy', got: ${JSON.stringify(result.warnings)}`
+        );
+    });
+
+    test("feel: swing in inline fence header sets feel to 'swing'", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "feel: swing");
+
+        assert.equal(result.feel, "swing");
+    });
+
+    test("feel directive does not appear as an instrument line", () => {
+        const source = [
+            "feel: swing",
+            "HH |x-x-x-x-|",
+        ].join("\n");
+        const result = parseDrumNotation(source);
+
+        assert.equal(result.lines.length, 1);
+        assert.equal(result.lines[0]?.instrument, "HH");
+    });
+});
+
 describe("buildLayout — HH accent-open articulation parsing", () => {
 
     test(">o on HH produces articulation 'accent-open'", () => {

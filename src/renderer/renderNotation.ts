@@ -23,6 +23,8 @@ import { buildBeamGroups } from "notation/layout/buildBeamGroups";
 
 import { renderBeams } from "./renderBeams";
 
+import { renderFeelIndicator } from "./renderFeelIndicator";
+
 import { buildLayout } from "notation/layout/buildLayout";
 
 export function renderDrumNotation(
@@ -66,6 +68,8 @@ export function renderDrumNotation(
     svg.classList.add("drum-svg");
 
     const firstLayout = layouts[0];
+
+    renderFeelIndicator(svg, notation.feel);
 
     renderSubdivisionLabels(
         svg,

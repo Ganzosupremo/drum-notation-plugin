@@ -4,6 +4,7 @@ type HeaderParseResult = {
     beatsPerBar?: number;
     timeSignature?: TimeSignature;
     subdivisionsPerBeat?: number;
+    feel?: "straight" | "swing" | "triplet";
     warnings: string[];
 };
 
@@ -46,7 +47,7 @@ function buildTimeSignature(
  * is captured as one value, breaking multi-directive inline headers.
  */
 function splitInlineHeader(header: string): string[] {
-    const keywordPattern = /\b(time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution)\b/gi;
+    const keywordPattern = /\b(time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution|feel|swing)\b/gi;
 
     const positions: number[] = [];
     let match: RegExpExecArray | null;
@@ -72,8 +73,13 @@ function splitInlineHeader(header: string): string[] {
 function parseHeaderLine(
     line: string,
     warnings: string[]
-): { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number } | undefined {
-    const headerPattern = /^(time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution)\s*(?:[:=]|\s)\s*(.+)$/i as RegExp;
+): { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number; feel?: "straight" | "swing" | "triplet" } | undefined {
+    // Standalone `swing` keyword (no value) → feel: "swing"
+    if (/^swing$/i.test(line.trim())) {
+        return { feel: "swing" };
+    }
+
+    const headerPattern = /^(time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution|feel|swing)\s*(?:[:=]|\s)\s*(.+)$/i as RegExp;
     const headerMatch = line.match(headerPattern);
 
     if (!headerMatch) return undefined;
@@ -113,6 +119,15 @@ function parseHeaderLine(
         return {};
     }
 
+    if (key === "feel" || key === "swing") {
+        const feelValue = value.toLowerCase();
+        if (feelValue === "swing" || feelValue === "straight" || feelValue === "triplet") {
+            return { feel: feelValue as "straight" | "swing" | "triplet" };
+        }
+        warnings.push(`Unknown feel value: "${value}"`);
+        return {};
+    }
+
     const parsedBeats = Number.parseInt(value, 10);
     if (Number.isFinite(parsedBeats)) {
         return { beatsPerBar: parsedBeats };
@@ -147,12 +162,13 @@ function parseSubdivisions(value: string): number | undefined {
 }
 
 function applyHeaderResult(
-    result: { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number } | undefined,
-    state: { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number }
+    result: { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number; feel?: "straight" | "swing" | "triplet" } | undefined,
+    state: { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number; feel?: "straight" | "swing" | "triplet" }
 ): void {
     if (result?.timeSignature) state.timeSignature = result.timeSignature;
     if (result?.beatsPerBar) state.beatsPerBar = result.beatsPerBar;
     if (result?.subdivisionsPerBeat) state.subdivisionsPerBeat = result.subdivisionsPerBeat;
+    if (result?.feel) state.feel = result.feel;
 }
 
 function parseHeaders(
@@ -160,7 +176,7 @@ function parseHeaders(
     headerLine?: string
 ): HeaderParseResult {
     const warnings: string[] = [];
-    const state: { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number } = {};
+    const state: { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number; feel?: "straight" | "swing" | "triplet" } = {};
 
     // Inline fence header may contain multiple space-separated directives,
     // e.g. "time 4/4 subdiv 4". Split into individual segments first so each
@@ -183,10 +199,16 @@ function parseHeaders(
         state.beatsPerBar = state.timeSignature.beatsPerBar;
     }
 
+    // feel: triplet implies subdivisionsPerBeat = 3 if not explicitly set
+    if (state.feel === "triplet" && !state.subdivisionsPerBeat) {
+        state.subdivisionsPerBeat = 3;
+    }
+
     return {
         beatsPerBar: state.beatsPerBar,
         timeSignature: state.timeSignature,
         subdivisionsPerBeat: state.subdivisionsPerBeat,
+        feel: state.feel,
         warnings
     };
 }
@@ -206,6 +228,7 @@ export function parseDrumNotation(
     const beatsPerBar = headerResult.beatsPerBar;
     const timeSignature = headerResult.timeSignature;
     const subdivisionsPerBeat = headerResult.subdivisionsPerBeat;
+    const feel = headerResult.feel;
 
     for (const line of lines) {
         if (parseHeaderLine(line, headerResult.warnings) !== undefined) {
@@ -237,6 +260,7 @@ export function parseDrumNotation(
         beatsPerBar,
         timeSignature,
         subdivisionsPerBeat,
+        feel,
         warnings: headerResult.warnings.length > 0 ? headerResult.warnings : undefined
     };
 }
