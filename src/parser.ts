@@ -28,6 +28,36 @@ function buildTimeSignature(
     };
 }
 
+/**
+ * Splits an inline header string like "time 4/4 subdiv 4" into individual
+ * key-value segments ["time 4/4", "subdiv 4"] so each directive can be
+ * parsed independently. Without this, the entire string after the first key
+ * is captured as one value, breaking multi-directive inline headers.
+ */
+function splitInlineHeader(header: string): string[] {
+    const keywordPattern = /\b(time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution)\b/gi;
+
+    const positions: number[] = [];
+    let match: RegExpExecArray | null;
+
+    keywordPattern.lastIndex = 0;
+    while ((match = keywordPattern.exec(header)) !== null) {
+        positions.push(match.index);
+    }
+
+    if (positions.length === 0) return [header];
+
+    const segments: string[] = [];
+    for (let i = 0; i < positions.length; i++) {
+        const start = positions[i] as number;
+        const end = i + 1 < positions.length ? positions[i + 1] as number : header.length;
+        const segment = header.slice(start, end).trim();
+        if (segment) segments.push(segment);
+    }
+
+    return segments;
+}
+
 function parseHeaderLine(
     line: string,
     warnings: string[]
@@ -99,41 +129,47 @@ function parseSubdivisions(value: string): number | undefined {
     return undefined;
 }
 
+function applyHeaderResult(
+    result: { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number } | undefined,
+    state: { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number }
+): void {
+    if (result?.timeSignature) state.timeSignature = result.timeSignature;
+    if (result?.beatsPerBar) state.beatsPerBar = result.beatsPerBar;
+    if (result?.subdivisionsPerBeat) state.subdivisionsPerBeat = result.subdivisionsPerBeat;
+}
+
 function parseHeaders(
     lines: string[],
     headerLine?: string
 ): HeaderParseResult {
     const warnings: string[] = [];
-    let beatsPerBar: number | undefined;
-    let timeSignature: TimeSignature | undefined;
-    let subdivisionsPerBeat: number | undefined;
+    const state: { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number } = {};
 
+    // Inline fence header may contain multiple space-separated directives,
+    // e.g. "time 4/4 subdiv 4". Split into individual segments first so each
+    // one is processed independently by parseHeaderLine.
     if (headerLine) {
-        const headerResult = parseHeaderLine(headerLine, warnings);
-        if (headerResult?.timeSignature) timeSignature = headerResult.timeSignature;
-        if (headerResult?.beatsPerBar) beatsPerBar = headerResult.beatsPerBar;
-        if (headerResult?.subdivisionsPerBeat) subdivisionsPerBeat = headerResult.subdivisionsPerBeat;
+        for (const segment of splitInlineHeader(headerLine)) {
+            applyHeaderResult(parseHeaderLine(segment, warnings), state);
+        }
     }
 
     for (const line of lines) {
-        const headerResult = parseHeaderLine(line, warnings);
-        if (headerResult?.timeSignature) timeSignature = headerResult.timeSignature;
-        if (headerResult?.beatsPerBar) beatsPerBar = headerResult.beatsPerBar;
-        if (headerResult?.subdivisionsPerBeat) subdivisionsPerBeat = headerResult.subdivisionsPerBeat;
+        applyHeaderResult(parseHeaderLine(line, warnings), state);
     }
 
-    if (!timeSignature && beatsPerBar) {
-        timeSignature = buildTimeSignature(beatsPerBar, 4);
+    if (!state.timeSignature && state.beatsPerBar) {
+        state.timeSignature = buildTimeSignature(state.beatsPerBar, 4);
     }
 
-    if (timeSignature) {
-        beatsPerBar = timeSignature.beatsPerBar;
+    if (state.timeSignature) {
+        state.beatsPerBar = state.timeSignature.beatsPerBar;
     }
 
     return {
-        beatsPerBar,
-        timeSignature,
-        subdivisionsPerBeat,
+        beatsPerBar: state.beatsPerBar,
+        timeSignature: state.timeSignature,
+        subdivisionsPerBeat: state.subdivisionsPerBeat,
         warnings
     };
 }
@@ -150,7 +186,7 @@ export function parseDrumNotation(
 
     const parsed: DrumLine[] = [];
     const headerResult = parseHeaders(lines, headerLine);
-    let beatsPerBar = headerResult.beatsPerBar;
+    const beatsPerBar = headerResult.beatsPerBar;
     const timeSignature = headerResult.timeSignature;
     const subdivisionsPerBeat = headerResult.subdivisionsPerBeat;
 
@@ -178,4 +214,4 @@ export function parseDrumNotation(
     };
 }
 
-    export { buildTimeSignature };
+export { buildTimeSignature };
