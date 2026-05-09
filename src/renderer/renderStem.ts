@@ -9,7 +9,7 @@ export function renderStem(
     stem.setAttribute("x1", x.toString());
     stem.setAttribute("y1", (y - 5).toString());
     stem.setAttribute("x2", x.toString());
-    stem.setAttribute("y2", (y - 35).toString());
+    stem.setAttribute("y2", (y - 26).toString());
     stem.classList.add("drum-note");
     svg.appendChild(stem);
 }

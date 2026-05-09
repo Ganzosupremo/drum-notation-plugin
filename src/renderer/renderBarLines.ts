@@ -43,7 +43,9 @@ export function renderBracketLines(
     cellCount: number
 ) {
     const openX = START_X;
-    const closeX = START_X + cellCount * CELL_WIDTH;
+    // Closing bracket aligns with one half-cell past the last cell's left edge,
+    // consistent with how inner beat bar lines are positioned (i*CELL_WIDTH + CELL_WIDTH/2).
+    const closeX = START_X + (cellCount - 1) * CELL_WIDTH + CELL_WIDTH / 2;
 
     for (const x of [openX, closeX]) {
         const line = createSVGElement("line");

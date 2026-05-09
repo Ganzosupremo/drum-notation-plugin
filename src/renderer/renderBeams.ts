@@ -12,9 +12,9 @@ export function renderBeams(
         for (let b = 0; b < count; b++) {
             const beam = createSVGElement("line");
 
-            // Primary beam sits at the stem top (y - 35).
+            // Primary beam sits at the stem top (y - 26).
             // Additional beams stack 4 px below (toward noteheads).
-            const yPos = group.y - 35 + b * 4;
+            const yPos = group.y - 26 + b * 4;
 
             beam.setAttribute("x1", group.startX.toString());
             beam.setAttribute("y1", yPos.toString());

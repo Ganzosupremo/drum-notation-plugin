@@ -27,10 +27,6 @@ import { buildLayout } from "notation/layout/buildLayout";
 
 import { renderFeelIndicator } from "./renderFeelIndicator";
 
-// Extra vertical space above the first row so 30px stems don't collide
-// with the subdivision-label row at y=20.
-const EXTRA_TOP = 20;
-
 export function renderDrumNotation(
     notation: DrumNotation,
     container: HTMLElement,
@@ -38,7 +34,7 @@ export function renderDrumNotation(
 ) {
     const beatsPerBar = timeSignature?.beatsPerBar ?? 4;
     const subdivisionsPerBeat = notation.subdivisionsPerBeat;
-    const height = notation.lines.length * ROW_HEIGHT + TOP_OFFSET + EXTRA_TOP;
+    const height = notation.lines.length * ROW_HEIGHT + 40;
 
     const wrapper = document.createElement("div");
     wrapper.className = "drum-container";
@@ -74,11 +70,10 @@ export function renderDrumNotation(
 
     renderFeelIndicator(svg, notation.feel);
 
-    // Collect per-row y values for later use in bar lines and brackets.
     const rowYs: number[] = [];
 
     layouts.forEach(({ line, notes, cellCount }, rowIndex) => {
-        const y = rowIndex * ROW_HEIGHT + TOP_OFFSET + EXTRA_TOP;
+        const y = rowIndex * ROW_HEIGHT + TOP_OFFSET;
         rowYs.push(y);
 
         renderLabel(svg, line.instrument, y);
@@ -99,7 +94,6 @@ export function renderDrumNotation(
         }
     });
 
-    // Full-height bar lines and bracket after all rows are rendered.
     if (rowYs.length > 0) {
         const firstY = rowYs[0] as number;
         const lastY = rowYs[rowYs.length - 1] as number;
