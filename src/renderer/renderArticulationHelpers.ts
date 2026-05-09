@@ -2,11 +2,11 @@ import { createSVGElement } from "./svgHelper";
 
 import { GLYPHS } from "./smufl";
 
-export function renderAccentMark(svg: SVGSVGElement, x: number, y: number, tipYOverride?: number) {
+export function renderAccentMark(svg: SVGSVGElement, x: number, y: number, tipYOverride?: number, scale: number = 1) {
     // articAccentAbove (U+E4A0) sits entirely above its text baseline.
-    // Default: baseline at stem top (y-35) with a 2px gap → y-37.
+    // Default: baseline at stem top (y - 35*scale) with a 2px gap → y - 37*scale.
     // tipYOverride lets callers shift the glyph for stemless noteheads.
-    const baselineY = tipYOverride !== undefined ? tipYOverride : y - 37;
+    const baselineY = tipYOverride !== undefined ? tipYOverride : y - 37 * scale;
 
     const text = createSVGElement("text");
     text.setAttribute("x", x.toString());

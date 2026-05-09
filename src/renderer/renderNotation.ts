@@ -30,7 +30,8 @@ import { renderFeelIndicator } from "./renderFeelIndicator";
 export function renderDrumNotation(
     notation: DrumNotation,
     container: HTMLElement,
-    timeSignature?: TimeSignature
+    timeSignature?: TimeSignature,
+    scale: number = 1
 ) {
     const beatsPerBar = timeSignature?.beatsPerBar ?? 4;
     const subdivisionsPerBeat = notation.subdivisionsPerBeat;
@@ -80,7 +81,7 @@ export function renderDrumNotation(
 
         renderStaffLine(svg, y, svgWidth);
 
-        renderNotes(svg, notes, y);
+        renderNotes(svg, notes, y, scale);
 
         if (line.instrument === "HH" || line.instrument === "RC" || line.instrument === "CC") {
             const groups = buildBeamGroups(
@@ -90,7 +91,7 @@ export function renderDrumNotation(
                 beatsPerBar,
                 subdivisionsPerBeat
             );
-            renderBeams(svg, groups);
+            renderBeams(svg, groups, scale);
         }
     });
 

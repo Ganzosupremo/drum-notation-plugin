@@ -13,6 +13,7 @@ export function renderSnareNote(
     x: number,
     y: number,
     articulation: Articulation = "normal",
+    scale: number = 1
 ) {
     if (articulation === "ghost") {
         const g = createSVGElement("g");
@@ -37,9 +38,9 @@ export function renderSnareNote(
     glyph.textContent = GLYPHS.noteheadBlack;
     svg.appendChild(glyph);
 
-    renderStem(svg, x, y);
+    renderStem(svg, x, y, scale);
 
     if (articulation === "accent") {
-        renderAccentMark(svg, x, y);
+        renderAccentMark(svg, x, y, undefined, scale);
     }
 }

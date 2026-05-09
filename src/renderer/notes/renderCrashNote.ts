@@ -10,7 +10,8 @@ const CRASH_Y_OFFSET = -8;
 export function renderCrashNote(
     svg: SVGSVGElement,
     x: number,
-    y: number
+    y: number,
+    scale: number = 1
 ) {
     const ny = y + CRASH_Y_OFFSET;
 
@@ -24,5 +25,5 @@ export function renderCrashNote(
     glyph.textContent = GLYPHS.noteheadCircleX;
     svg.appendChild(glyph);
 
-    renderStem(svg, x, ny);
+    renderStem(svg, x, ny, scale);
 }

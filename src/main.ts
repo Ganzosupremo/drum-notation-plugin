@@ -6,6 +6,7 @@ import { DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab } from "./settings
 
 export default class DrumNotationPlugin extends Plugin {
     settings: MyPluginSettings = {} as MyPluginSettings;
+    private _scaleStyleEl: HTMLStyleElement | null = null;
 
     async onload() {
 
@@ -15,6 +16,7 @@ export default class DrumNotationPlugin extends Plugin {
         this.addSettingTab(new SampleSettingTab(this.app, this));
 
         this.loadBravuraFont();
+        this.applyNotationScale();
 
         this.registerMarkdownCodeBlockProcessor(
             "drums",
@@ -34,7 +36,8 @@ export default class DrumNotationPlugin extends Plugin {
                     const timeSignature = parsed.timeSignature
                         ?? buildTimeSignature(beatsPerBar, 4);
 
-                    renderDrumNotation(parsed, el, timeSignature);
+                    const notationScale = (this.settings.notationScale ?? DEFAULT_SETTINGS.notationScale) / 100;
+                    renderDrumNotation(parsed, el, timeSignature, notationScale);
 
                 } catch (error) {
 
@@ -81,12 +84,29 @@ export default class DrumNotationPlugin extends Plugin {
         document.head.appendChild(style);
     }
 
+    /**
+     * Inject (or update) a <style> element that sets the --drum-notation-scale
+     * CSS custom property on :root, used by styles.css to scale notehead sizes.
+     */
+    applyNotationScale(): void {
+        const scale = (this.settings.notationScale ?? DEFAULT_SETTINGS.notationScale) / 100;
+        if (!this._scaleStyleEl) {
+            this._scaleStyleEl = document.createElement("style");
+            this._scaleStyleEl.id = "drum-notation-scale";
+            document.head.appendChild(this._scaleStyleEl);
+        }
+        this._scaleStyleEl.textContent = `:root { --drum-notation-scale: ${scale}; }`;
+    }
+
     async saveSettings() {
         await this.saveData(this.settings);
     }
 
     onunload() {
-
+        if (this._scaleStyleEl) {
+            this._scaleStyleEl.remove();
+            this._scaleStyleEl = null;
+        }
         console.log("Unloading Drum Notation Plugin");
     }
 }

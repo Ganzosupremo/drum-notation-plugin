@@ -14,7 +14,8 @@ export function renderTomNote(
     svg: SVGSVGElement,
     instrument: string,
     x: number,
-    y: number
+    y: number,
+    scale: number = 1
 ) {
     const offset = TOM_Y_OFFSET[instrument] ?? 0;
     const cy = y + offset;
@@ -26,5 +27,5 @@ export function renderTomNote(
     glyph.textContent = GLYPHS.noteheadBlack;
     svg.appendChild(glyph);
 
-    renderStem(svg, x, cy);
+    renderStem(svg, x, cy, scale);
 }

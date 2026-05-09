@@ -10,7 +10,8 @@ const RIDE_Y_OFFSET = -4;
 export function renderRideNote(
     svg: SVGSVGElement,
     x: number,
-    y: number
+    y: number,
+    scale: number = 1
 ) {
     const ny = y + RIDE_Y_OFFSET;
 
@@ -21,5 +22,5 @@ export function renderRideNote(
     glyph.textContent = GLYPHS.noteheadXBlack;
     svg.appendChild(glyph);
 
-    renderStem(svg, x, ny);
+    renderStem(svg, x, ny, scale);
 }

@@ -13,6 +13,7 @@ export function renderHiHatNote(
     x: number,
     y: number,
     articulation: Articulation = "normal",
+    scale: number = 1
 ) {
     // Open HH: noteheadHalf (U+E0A3) — open oval notehead, the standard
     // SMuFL glyph for an open hi-hat in drum notation.
@@ -24,7 +25,7 @@ export function renderHiHatNote(
         glyph.classList.add("drum-glyph-open-hh");
         glyph.textContent = GLYPHS.noteheadHalf;
         svg.appendChild(glyph);
-        renderStem(svg, x, y);
+        renderStem(svg, x, y, scale);
         return;
     }
 
@@ -36,8 +37,8 @@ export function renderHiHatNote(
         glyph.classList.add("drum-glyph-open-hh");
         glyph.textContent = GLYPHS.noteheadHalf;
         svg.appendChild(glyph);
-        renderStem(svg, x, y);
-        renderAccentMark(svg, x, y);
+        renderStem(svg, x, y, scale);
+        renderAccentMark(svg, x, y, undefined, scale);
         return;
     }
 
@@ -54,7 +55,7 @@ export function renderHiHatNote(
 
         svg.appendChild(g);
         renderGhostParens(svg, x, y);
-        renderStem(svg, x, y);
+        renderStem(svg, x, y, scale);
         return;
     }
 
@@ -66,9 +67,9 @@ export function renderHiHatNote(
     glyph.textContent = GLYPHS.noteheadXBlack;
     svg.appendChild(glyph);
 
-    renderStem(svg, x, y);
+    renderStem(svg, x, y, scale);
 
     if (articulation === "accent") {
-        renderAccentMark(svg, x, y);
+        renderAccentMark(svg, x, y, undefined, scale);
     }
 }

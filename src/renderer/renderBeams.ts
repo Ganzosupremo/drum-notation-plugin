@@ -4,7 +4,8 @@ import { createSVGElement } from "./svgHelper";
 
 export function renderBeams(
     svg: SVGSVGElement,
-    groups: BeamGroup[]
+    groups: BeamGroup[],
+    scale: number = 1
 ) {
     groups.forEach(group => {
         const count = group.beamCount ?? 1;
@@ -12,9 +13,9 @@ export function renderBeams(
         for (let b = 0; b < count; b++) {
             const beam = createSVGElement("line");
 
-            // Primary beam anchors at the stem top (y - 35).
-            // Additional beams stack 4 px below (toward noteheads).
-            const yPos = group.y - 35 + b * 4;
+            // Primary beam anchors at the stem top (y - 35 * scale).
+            // Additional beams stack 4 * scale px below (toward noteheads).
+            const yPos = group.y - 35 * scale + b * 4 * scale;
 
             beam.setAttribute("x1", group.startX.toString());
             beam.setAttribute("y1", yPos.toString());
