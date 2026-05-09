@@ -23,6 +23,18 @@ export function renderHiHatNote(
         return;
     }
 
+    if (articulation === "accent-open") {
+        const circle = createSVGElement("circle");
+        circle.setAttribute("cx", x.toString());
+        circle.setAttribute("cy", y.toString());
+        circle.setAttribute("r", "6");
+        circle.classList.add("drum-note-open-hh");
+        svg.appendChild(circle);
+        renderStem(svg, x, y);
+        renderAccentMark(svg, x, y);
+        return;
+    }
+
     const size = 7;
 
     if (articulation === "ghost") {

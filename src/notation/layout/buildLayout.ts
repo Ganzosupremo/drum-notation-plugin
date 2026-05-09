@@ -57,10 +57,12 @@ export function buildLayout(
         if (articulated && ch === ">") {
             const nextChar: string | null = i + 1 < str.length ? (str[i + 1] ?? null) : null;
             if (nextChar !== null && nextChar !== "-") {
+                const accentArticulation: Articulation =
+                    (supportsOpen && nextChar === "o") ? "accent-open" : "accent";
                 notes.push({
                     instrument,
                     symbol: nextChar,
-                    articulation: "accent",
+                    articulation: accentArticulation,
                     index: cellIndex,
                     x: START_X + cellIndex * CELL_WIDTH,
                 });
@@ -85,10 +87,12 @@ export function buildLayout(
         if (articulated) {
             const nextChar: string | null = i + 1 < str.length ? (str[i + 1] ?? null) : null;
             if (nextChar === "^") {
+                const accentArticulation: Articulation =
+                    (supportsOpen && ch === "o") ? "accent-open" : "accent";
                 notes.push({
                     instrument,
                     symbol: ch,
-                    articulation: "accent",
+                    articulation: accentArticulation,
                     index: cellIndex,
                     x: START_X + cellIndex * CELL_WIDTH,
                 });

@@ -20,7 +20,7 @@ export interface DrumNotation {
     warnings?: string[];
 }
 
-export type Articulation = "normal" | "open" | "ghost" | "accent";
+export type Articulation = "normal" | "open" | "ghost" | "accent" | "accent-open";
 
 export interface NoteEvent {
 
