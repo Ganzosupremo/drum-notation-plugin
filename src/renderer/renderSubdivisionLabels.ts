@@ -48,6 +48,14 @@ export function renderSubdivisionLabels(
         const beatIndex = subdivisionsPerBeat > 0
             ? Math.floor(i / subdivisionsPerBeat)
             : 0;
+
+        // When an explicit subdiv override is active, stop labeling past the
+        // declared number of beats so a pattern that is longer than expected
+        // does not produce phantom beat numbers (5, 6, 7 …) in a 4/4 chart.
+        if (subdivisionsOverride && subdivisionsOverride > 0 && beatIndex >= beatsPerBar) {
+            continue;
+        }
+
         const offset = subdivisionsPerBeat > 0
             ? i % subdivisionsPerBeat
             : 0;
