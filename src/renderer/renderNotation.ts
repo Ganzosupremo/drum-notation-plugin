@@ -101,7 +101,7 @@ export function renderDrumNotation(
         const bottomY = lastY + 12;
 
         renderBarLines(svg, topY, bottomY, maxCellCount, beatsPerBar, subdivisionsPerBeat);
-        renderBracketLines(svg, topY, bottomY, maxCellCount);
+        renderBracketLines(svg, topY, bottomY);
     }
 
     wrapper.appendChild(svg);

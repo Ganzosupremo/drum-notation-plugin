@@ -40,20 +40,15 @@ export function renderBracketLines(
     svg: SVGSVGElement,
     topY: number,
     bottomY: number,
-    cellCount: number
 ) {
-    const openX = START_X;
-    // Closing bracket aligns with one half-cell past the last cell's left edge,
-    // consistent with how inner beat bar lines are positioned (i*CELL_WIDTH + CELL_WIDTH/2).
-    const closeX = START_X + (cellCount - 1) * CELL_WIDTH + CELL_WIDTH / 2;
-
-    for (const x of [openX, closeX]) {
-        const line = createSVGElement("line");
-        line.setAttribute("x1", x.toString());
-        line.setAttribute("y1", topY.toString());
-        line.setAttribute("x2", x.toString());
-        line.setAttribute("y2", bottomY.toString());
-        line.classList.add("drum-bar");
-        svg.appendChild(line);
-    }
+    // Only the opening bracket is drawn here. The closing bracket coincides
+    // with the last beat-boundary line already emitted by renderBarLines, so
+    // drawing it again would cause a double-stroke at that position.
+    const line = createSVGElement("line");
+    line.setAttribute("x1", START_X.toString());
+    line.setAttribute("y1", topY.toString());
+    line.setAttribute("x2", START_X.toString());
+    line.setAttribute("y2", bottomY.toString());
+    line.classList.add("drum-bar");
+    svg.appendChild(line);
 }

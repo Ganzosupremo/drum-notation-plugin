@@ -36,6 +36,7 @@ export function renderSnareNote(
     svg.appendChild(ellipse);
 
     if (articulation === "accent") {
-        renderAccentMark(svg, x, y);
+        // SD has no stem; position the accent just above the notehead top (y - ry - gap).
+        renderAccentMark(svg, x, y, y - 14);
     }
 }

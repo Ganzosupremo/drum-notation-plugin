@@ -1,9 +1,11 @@
 import { createSVGElement } from "./svgHelper";
 
-export function renderAccentMark(svg: SVGSVGElement, x: number, y: number) {
-    // Accent chevron sits above the stem top (y - 35), with a small gap.
+export function renderAccentMark(svg: SVGSVGElement, x: number, y: number, tipYOverride?: number) {
+    // Default: accent sits above the stem top (y - 35) with a small gap.
+    // Stemless noteheads (SD/BD) pass a lower tipYOverride (e.g. y - 16)
+    // so the chevron stays close to the notehead rather than floating far above.
     const tipX = x + 6;
-    const tipY = y - 42;
+    const tipY = tipYOverride ?? (y - 42);
     const wingSpread = 5;
 
     const top = createSVGElement("line");
