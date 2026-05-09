@@ -14,27 +14,28 @@ export function renderHiHatNote(
     y: number,
     articulation: Articulation = "normal",
 ) {
-    // Open HH: drawn as a circle (open notehead convention).
-    // Kept as an SVG circle rather than noteheadHalf so it reads
-    // unambiguously as "open" and to retain the stroke-only appearance.
+    // Open HH: noteheadHalf (U+E0A3) — open oval notehead, the standard
+    // SMuFL glyph for an open hi-hat in drum notation.
     if (articulation === "open") {
-        const circle = createSVGElement("circle");
-        circle.setAttribute("cx", x.toString());
-        circle.setAttribute("cy", y.toString());
-        circle.setAttribute("r", "6");
-        circle.classList.add("drum-note-open-hh");
-        svg.appendChild(circle);
+        const glyph = createSVGElement("text");
+        glyph.setAttribute("x", x.toString());
+        glyph.setAttribute("y", y.toString());
+        glyph.classList.add("drum-glyph");
+        glyph.classList.add("drum-glyph-open-hh");
+        glyph.textContent = GLYPHS.noteheadHalf;
+        svg.appendChild(glyph);
         renderStem(svg, x, y);
         return;
     }
 
     if (articulation === "accent-open") {
-        const circle = createSVGElement("circle");
-        circle.setAttribute("cx", x.toString());
-        circle.setAttribute("cy", y.toString());
-        circle.setAttribute("r", "6");
-        circle.classList.add("drum-note-open-hh");
-        svg.appendChild(circle);
+        const glyph = createSVGElement("text");
+        glyph.setAttribute("x", x.toString());
+        glyph.setAttribute("y", y.toString());
+        glyph.classList.add("drum-glyph");
+        glyph.classList.add("drum-glyph-open-hh");
+        glyph.textContent = GLYPHS.noteheadHalf;
+        svg.appendChild(glyph);
         renderStem(svg, x, y);
         renderAccentMark(svg, x, y);
         return;

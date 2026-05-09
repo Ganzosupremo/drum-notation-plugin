@@ -96,6 +96,16 @@
 }
 
 /*
+ * Open hi-hat glyph (noteheadHalf U+E0A3) — stroke only, no fill,
+ * matching the standard visual convention for an open hi-hat notehead.
+ */
+.drum-glyph-open-hh {
+    fill: none;
+    stroke: #111;
+    stroke-width: 1.5;
+}
+
+/*
  * Accent articulation glyph (articAccentAbove U+E4A0).
  * The SMuFL accent glyph sits entirely above its text baseline, so
  * the baseline is placed at the stem top and the glyph extends upward.
@@ -104,12 +114,6 @@
 .drum-glyph-accent {
     font-size: 24px;
     dominant-baseline: auto;
-}
-
-.drum-note-open-hh {
-    stroke: #111;
-    stroke-width: 2;
-    fill: none;
 }
 
 .drum-note-ghost-paren {

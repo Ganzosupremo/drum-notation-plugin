@@ -26,6 +26,7 @@ function makeSVG(): MockSVGElement {
 
 type RenderHiHatNote = typeof import("./renderHiHatNote").renderHiHatNote;
 let renderHiHatNote: RenderHiHatNote;
+let GLYPHS: typeof import("../smufl").GLYPHS;
 
 before(async () => {
     (globalThis as any).document = {
@@ -33,27 +34,25 @@ before(async () => {
     };
     const mod = await import("./renderHiHatNote");
     renderHiHatNote = mod.renderHiHatNote;
+    const smufl = await import("../smufl");
+    GLYPHS = smufl.GLYPHS;
 });
 
 describe("renderHiHatNote — accent-open SVG output", () => {
 
-    test("accent-open renders an open-circle element", () => {
+    test("accent-open renders an open notehead glyph (noteheadHalf)", () => {
         const svg = makeSVG();
         renderHiHatNote(svg as any, 50, 100, "accent-open");
 
-        const circles = svg.children.filter(c => c.tagName === "circle");
-        assert.equal(circles.length, 1, "expected exactly one circle element");
-        assert.ok(
-            circles[0]?.classList.has("drum-note-open-hh"),
-            "circle should have class drum-note-open-hh"
-        );
+        const glyphs = svg.children.filter(c => c.tagName === "text" && c.classList.has("drum-glyph-open-hh"));
+        assert.equal(glyphs.length, 1, "expected exactly one open-HH glyph text element");
+        assert.equal(glyphs[0]?.textContent, GLYPHS.noteheadHalf, "expected noteheadHalf glyph character");
     });
 
     test("accent-open renders an accent-mark glyph element", () => {
         const svg = makeSVG();
         renderHiHatNote(svg as any, 50, 100, "accent-open");
 
-        // After SMuFL migration: accent is a <text> glyph, not lines.
         const texts = svg.children.filter(c => c.tagName === "text");
         assert.ok(
             texts.length >= 1,
@@ -65,36 +64,36 @@ describe("renderHiHatNote — accent-open SVG output", () => {
         );
     });
 
-    test("accent-open total child count: 1 circle + 1 stem + 1 accent glyph", () => {
+    test("accent-open total child count: 1 open glyph + 1 stem + 1 accent glyph", () => {
         const svg = makeSVG();
         renderHiHatNote(svg as any, 50, 100, "accent-open");
 
-        // circle (open HH head) + line (stem) + text (accent glyph)
-        assert.equal(svg.children.length, 3, "expected circle, stem line, and accent glyph text");
+        // text (open HH glyph) + line (stem) + text (accent glyph)
+        assert.equal(svg.children.length, 3, "expected open-HH glyph, stem line, and accent glyph text");
     });
 
-    test("accent-open circle uses the provided x and y coordinates", () => {
+    test("accent-open open-HH glyph uses the provided x and y coordinates", () => {
         const svg = makeSVG();
         renderHiHatNote(svg as any, 80, 120, "accent-open");
 
-        const circle = svg.children.find(c => c.tagName === "circle");
-        assert.ok(circle, "expected a circle element");
-        assert.equal(circle.getAttribute("cx"), "80");
-        assert.equal(circle.getAttribute("cy"), "120");
+        const glyph = svg.children.find(c => c.tagName === "text" && c.classList.has("drum-glyph-open-hh"));
+        assert.ok(glyph, "expected an open-HH glyph text element");
+        assert.equal(glyph.getAttribute("x"), "80");
+        assert.equal(glyph.getAttribute("y"), "120");
     });
 });
 
 describe("renderHiHatNote — open vs accent-open comparison", () => {
 
-    test("plain 'open' renders circle + stem only (no accent lines)", () => {
+    test("plain 'open' renders open-HH glyph + stem only (no accent)", () => {
         const svg = makeSVG();
         renderHiHatNote(svg as any, 50, 100, "open");
 
-        assert.equal(svg.children.length, 2, "open should have circle + stem only");
+        assert.equal(svg.children.length, 2, "open should have open-HH glyph + stem only");
 
-        const circles = svg.children.filter(c => c.tagName === "circle");
-        assert.equal(circles.length, 1);
-        assert.ok(circles[0]?.classList.has("drum-note-open-hh"));
+        const glyphs = svg.children.filter(c => c.tagName === "text" && c.classList.has("drum-glyph-open-hh"));
+        assert.equal(glyphs.length, 1);
+        assert.equal(glyphs[0]?.textContent, GLYPHS.noteheadHalf);
     });
 
     test("'open' has fewer children than 'accent-open'", () => {
@@ -110,42 +109,45 @@ describe("renderHiHatNote — open vs accent-open comparison", () => {
         );
     });
 
-    test("'accent-open' has a circle (open HH head) like plain 'open' does", () => {
+    test("'accent-open' uses the same open notehead glyph as plain 'open'", () => {
         const svgOpen = makeSVG();
         renderHiHatNote(svgOpen as any, 50, 100, "open");
 
         const svgAccentOpen = makeSVG();
         renderHiHatNote(svgAccentOpen as any, 50, 100, "accent-open");
 
-        const openCircles = svgOpen.children.filter(c => c.tagName === "circle");
-        const accentOpenCircles = svgAccentOpen.children.filter(c => c.tagName === "circle");
+        const openGlyph = svgOpen.children.find(c => c.tagName === "text" && c.classList.has("drum-glyph-open-hh"));
+        const accentOpenGlyph = svgAccentOpen.children.find(c => c.tagName === "text" && c.classList.has("drum-glyph-open-hh"));
 
-        assert.equal(openCircles.length, 1);
-        assert.equal(accentOpenCircles.length, 1);
+        assert.ok(openGlyph, "open should have an open-HH glyph");
+        assert.ok(accentOpenGlyph, "accent-open should have an open-HH glyph");
         assert.equal(
-            openCircles[0]?.getAttribute("r"),
-            accentOpenCircles[0]?.getAttribute("r"),
-            "both open and accent-open should use the same circle radius"
+            openGlyph.textContent,
+            accentOpenGlyph.textContent,
+            "both open and accent-open should use the same notehead glyph character"
         );
     });
 });
 
 describe("renderHiHatNote — normal and accent still work correctly", () => {
 
-    test("normal articulation renders no circle (X-cross head only)", () => {
+    test("normal articulation renders an X notehead glyph (no open-HH glyph)", () => {
         const svg = makeSVG();
         renderHiHatNote(svg as any, 50, 100, "normal");
 
-        const circles = svg.children.filter(c => c.tagName === "circle");
-        assert.equal(circles.length, 0, "normal HH should not render a circle");
+        const openHHGlyphs = svg.children.filter(c => c.tagName === "text" && c.classList.has("drum-glyph-open-hh"));
+        assert.equal(openHHGlyphs.length, 0, "normal HH should not render an open-HH glyph");
+
+        const xGlyphs = svg.children.filter(c => c.tagName === "text" && c.classList.has("drum-glyph"));
+        assert.ok(xGlyphs.some(g => g.textContent === GLYPHS.noteheadXBlack), "normal HH should render noteheadXBlack");
     });
 
-    test("'accent' articulation renders no circle", () => {
+    test("'accent' articulation renders no open-HH glyph", () => {
         const svg = makeSVG();
         renderHiHatNote(svg as any, 50, 100, "accent");
 
-        const circles = svg.children.filter(c => c.tagName === "circle");
-        assert.equal(circles.length, 0, "accent HH should not render a circle");
+        const openHHGlyphs = svg.children.filter(c => c.tagName === "text" && c.classList.has("drum-glyph-open-hh"));
+        assert.equal(openHHGlyphs.length, 0, "accent HH should not render an open-HH glyph");
     });
 
     test("'accent' renders more elements than 'normal' (adds accent glyph)", () => {

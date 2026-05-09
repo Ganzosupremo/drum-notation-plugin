@@ -1,14 +1,12 @@
 /**
  * SMuFL glyph registry for the drum notation plugin.
  *
- * Codepoints are from the SMuFL standard specification and verified against
- * the canonical glyph-name list in assets/glyphnames.json.
+ * Codepoints are resolved at module load time from the canonical SMuFL
+ * glyph-name map (assets/glyphnames.json, sourced from w3c/smufl). Each
+ * entry in that file maps a glyph name to its Unicode codepoint string
+ * ("U+E0A4") and a human-readable description.
  *
- * Spec references:
- *  - Noteheads:     https://w3c.github.io/smufl/latest/tables/noteheads.html
- *  - Articulations: https://w3c.github.io/smufl/latest/tables/articulations.html
- *
- * Bravura bounding boxes (from assets/bravura_metadata.json, in staff spaces):
+ * Bravura bounding boxes are documented in assets/bravura_metadata.json:
  *  noteheadBlack:    SW=[0, -0.5]   NE=[1.18,  0.5]  (1 staff space tall)
  *  noteheadHalf:     SW=[0, -0.5]   NE=[1.18,  0.5]
  *  noteheadXBlack:   SW=[0, -0.5]   NE=[1.16,  0.5]
@@ -17,24 +15,48 @@
  *  articAccentAbove: SW=[0,  0.004] NE=[1.356, 0.98]  (above-baseline only)
  */
 
+import glyphnames from "../../assets/glyphnames.json";
+
+interface GlyphnameEntry {
+    codepoint: string;
+    description: string;
+}
+
+/** Parse a SMuFL codepoint string ("U+E0A4") into a Unicode character. */
+function resolveGlyph(name: string): string {
+    const entry = (glyphnames as Record<string, GlyphnameEntry | undefined>)[name];
+    if (entry === undefined) {
+        throw new Error(`Unknown SMuFL glyph name: "${name}"`);
+    }
+    const cp = parseInt(entry.codepoint.replace("U+", ""), 16);
+    return String.fromCodePoint(cp);
+}
+
+export type GlyphName =
+    | "noteheadBlack"
+    | "noteheadHalf"
+    | "noteheadXBlack"
+    | "noteheadPlusBlack"
+    | "noteheadCircleX"
+    | "articAccentAbove";
+
 /**
- * Pre-resolved Bravura glyph characters.
+ * Pre-resolved Bravura glyph characters, looked up from the SMuFL
+ * glyphnames.json metadata at module load time.
  *
- * Defined as a literal object (not a Record) so TypeScript knows each
- * property is always a string — compatible with noUncheckedIndexedAccess.
+ * Defined as a literal const object (not a Record) so TypeScript knows
+ * each property is always a string — safe with noUncheckedIndexedAccess.
  */
-export const GLYPHS = {
-    noteheadBlack:     String.fromCodePoint(0xE0A4),
-    noteheadHalf:      String.fromCodePoint(0xE0A3),
-    noteheadXBlack:    String.fromCodePoint(0xE0A9),
-    noteheadPlusBlack: String.fromCodePoint(0xE0AF),
-    noteheadCircleX:   String.fromCodePoint(0xE0B3),
-    articAccentAbove:  String.fromCodePoint(0xE4A0),
-} as const;
+export const GLYPHS: { readonly [K in GlyphName]: string } = {
+    noteheadBlack:     resolveGlyph("noteheadBlack"),
+    noteheadHalf:      resolveGlyph("noteheadHalf"),
+    noteheadXBlack:    resolveGlyph("noteheadXBlack"),
+    noteheadPlusBlack: resolveGlyph("noteheadPlusBlack"),
+    noteheadCircleX:   resolveGlyph("noteheadCircleX"),
+    articAccentAbove:  resolveGlyph("articAccentAbove"),
+};
 
-export type GlyphName = keyof typeof GLYPHS;
-
-/** Resolve a SMuFL glyph name to its Unicode character. */
+/** Resolve any SMuFL glyph name to its Bravura Unicode character. */
 export function glyphChar(name: GlyphName): string {
     return GLYPHS[name];
 }
