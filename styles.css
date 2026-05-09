@@ -71,3 +71,23 @@
     font-family: monospace;
     opacity: 0.55;
 }
+
+.drum-note-ride {
+    stroke: #aaddff;
+}
+
+.drum-note-crash {
+    stroke: #ffcc88;
+}
+
+.drum-note-crash-ring {
+    stroke: #ffcc88;
+    stroke-width: 1.5;
+    fill: none;
+}
+
+.drum-note-fallback {
+    stroke: #aaaaaa;
+    stroke-width: 1.5;
+    fill: none;
+}

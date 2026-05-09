@@ -195,7 +195,17 @@ export function parseDrumNotation(
             continue;
         }
 
-        const [instrument, pattern] = line.split("|").map(s => s.trim());
+        const segments = line.split("|").map(s => s.trim());
+        const instrument = segments[0];
+        // Join all inner segments (between the first and last pipe) so that
+        // inner bar separators like `HH |x-x-|x-x-|` are treated the same as
+        // `HH |x-x-x-x-|`. Drop the trailing empty segment produced by a
+        // closing `|`.
+        const innerSegments = segments.slice(1);
+        if (innerSegments[innerSegments.length - 1] === "") {
+            innerSegments.pop();
+        }
+        const pattern = innerSegments.join("");
 
         if (!instrument || !pattern) continue;
 

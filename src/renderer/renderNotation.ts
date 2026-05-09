@@ -78,8 +78,8 @@ export function renderDrumNotation(
 
         renderBarLines(svg, y, cellCount, beatsPerBar, subdivisionsPerBeat);
 
-        // RENDER BEAMS
-        if (line.instrument === "HH") {
+        // RENDER BEAMS for cymbal rows
+        if (line.instrument === "HH" || line.instrument === "RC" || line.instrument === "CC") {
 
             const groups = buildBeamGroups(
                 notes,
