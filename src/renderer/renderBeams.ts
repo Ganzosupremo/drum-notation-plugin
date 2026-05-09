@@ -15,8 +15,9 @@ export function renderBeams(
 
             const beam = createSVGElement("line");
 
-            // Stack additional beams 4 px above the primary beam
-            const yPos = group.y - 18 - b * 4;
+            // Stack additional beams 4 px below the primary beam (toward noteheads),
+            // keeping all beams below the subdivision-label row at y=20.
+            const yPos = group.y - 18 + b * 4;
 
             beam.setAttribute(
                 "x1",
