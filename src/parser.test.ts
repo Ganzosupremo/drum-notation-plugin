@@ -354,6 +354,60 @@ describe("header directives — subdivision aliases", () => {
 
         assert.equal(result.subdivisionsPerBeat, 3);
     });
+
+    test("subdiv 8TH (uppercase) sets subdivisionsPerBeat to 2", () => {
+        const result = parseDrumNotation("HH |x-x-|", "subdiv 8TH");
+
+        assert.equal(result.subdivisionsPerBeat, 2);
+    });
+
+    test("subdiv 8Ths (mixed-case) sets subdivisionsPerBeat to 2", () => {
+        const result = parseDrumNotation("HH |x-x-|", "subdiv 8Ths");
+
+        assert.equal(result.subdivisionsPerBeat, 2);
+    });
+
+    test("subdiv EIGHTH (uppercase) sets subdivisionsPerBeat to 2", () => {
+        const result = parseDrumNotation("HH |x-x-|", "subdiv EIGHTH");
+
+        assert.equal(result.subdivisionsPerBeat, 2);
+    });
+
+    test("subdiv SIXTEENTH (uppercase) sets subdivisionsPerBeat to 4", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "subdiv SIXTEENTH");
+
+        assert.equal(result.subdivisionsPerBeat, 4);
+    });
+
+    test("subdiv Sixteenth (mixed-case) sets subdivisionsPerBeat to 4", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "subdiv Sixteenth");
+
+        assert.equal(result.subdivisionsPerBeat, 4);
+    });
+
+    test("subdiv 16TH (uppercase) sets subdivisionsPerBeat to 4", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "subdiv 16TH");
+
+        assert.equal(result.subdivisionsPerBeat, 4);
+    });
+
+    test("subdiv Triplet (mixed-case) sets subdivisionsPerBeat to 3", () => {
+        const result = parseDrumNotation("HH |x-x-x-|", "subdiv Triplet");
+
+        assert.equal(result.subdivisionsPerBeat, 3);
+    });
+
+    test("subdiv TRIPLET (uppercase) sets subdivisionsPerBeat to 3", () => {
+        const result = parseDrumNotation("HH |x-x-x-|", "subdiv TRIPLET");
+
+        assert.equal(result.subdivisionsPerBeat, 3);
+    });
+
+    test("subdiv TRI (uppercase) sets subdivisionsPerBeat to 3", () => {
+        const result = parseDrumNotation("HH |x-x-x-|", "subdiv TRI");
+
+        assert.equal(result.subdivisionsPerBeat, 3);
+    });
 });
 
 describe("header directives — malformed values produce warnings", () => {
