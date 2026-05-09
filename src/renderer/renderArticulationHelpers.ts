@@ -1,9 +1,9 @@
 import { createSVGElement } from "./svgHelper";
 
 export function renderAccentMark(svg: SVGSVGElement, x: number, y: number) {
-    // Accent chevron sits above the stem top (y - 26), with a small gap.
+    // Accent chevron sits above the stem top (y - 35), with a small gap.
     const tipX = x + 6;
-    const tipY = y - 33;
+    const tipY = y - 42;
     const wingSpread = 5;
 
     const top = createSVGElement("line");
