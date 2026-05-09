@@ -20,11 +20,15 @@ export interface DrumNotation {
     warnings?: string[];
 }
 
+export type Articulation = "normal" | "open" | "ghost" | "accent";
+
 export interface NoteEvent {
 
     instrument: string;
 
     symbol: string;
+
+    articulation: Articulation;
 
     index: number;
 

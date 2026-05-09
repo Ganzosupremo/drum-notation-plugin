@@ -59,3 +59,15 @@
     stroke: white;
     stroke-width: 3;
 }
+
+.drum-note-open-hh {
+    stroke: white;
+    stroke-width: 2;
+    fill: none;
+}
+
+.drum-note-ghost-paren {
+    fill: white;
+    font-family: monospace;
+    opacity: 0.55;
+}

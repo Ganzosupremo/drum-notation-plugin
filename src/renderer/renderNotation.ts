@@ -52,28 +52,31 @@ export function renderDrumNotation(
 
     svg.classList.add("drum-svg");
 
-    const firstLine = notation.lines[0];
+    // Build all layouts up front so cellCount is available for subdivision labels
+    const layouts = notation.lines.map((line) => ({
+        line,
+        ...buildLayout(line.instrument, line.pattern),
+    }));
+
+    const firstLayout = layouts[0];
 
     renderSubdivisionLabels(
         svg,
-        firstLine?.pattern.length ?? 0,
+        firstLayout?.cellCount ?? 0,
         timeSignature,
         subdivisionsPerBeat
     );
 
-    notation.lines.forEach((line, rowIndex) => {
+    layouts.forEach(({ line, notes, cellCount }, rowIndex) => {
         const y = rowIndex * ROW_HEIGHT + TOP_OFFSET;
 
         renderLabel(svg, line.instrument, y);
 
-        renderGrid(svg, y, line.pattern.length);
-
-        // Build layout once per line to avoid duplicate parsing.
-        const notes = buildLayout(line.instrument, line.pattern);
+        renderGrid(svg, y, cellCount);
 
         renderNotes(svg, notes, y);
 
-        renderBarLines(svg, y, line.pattern.length, beatsPerBar, subdivisionsPerBeat);
+        renderBarLines(svg, y, cellCount, beatsPerBar, subdivisionsPerBeat);
 
         // RENDER BEAMS
         if (line.instrument === "HH") {
@@ -81,7 +84,7 @@ export function renderDrumNotation(
             const groups = buildBeamGroups(
                 notes,
                 y,
-                line.pattern.length,
+                cellCount,
                 beatsPerBar,
                 subdivisionsPerBeat
             );

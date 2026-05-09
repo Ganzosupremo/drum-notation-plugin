@@ -14,7 +14,7 @@ export function renderNotes(
     notes.forEach((note) => {
         switch (note.instrument) {
             case "HH":
-                renderHiHatNote(svg, note.x, y);
+                renderHiHatNote(svg, note.x, y, note.articulation);
                 break;
             case "SD":
                 renderSnareNote(svg, note.x, y);
