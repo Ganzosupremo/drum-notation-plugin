@@ -1,25 +1,18 @@
 import { createSVGElement } from "renderer/svgHelper";
 
+import { GLYPHS } from "../smufl";
+
 export function renderHiHatFootNote(
     svg: SVGSVGElement,
     x: number,
     y: number
 ) {
-    const size = 7;
-
-    const horizontal = createSVGElement("line");
-    horizontal.setAttribute("x1", (x - size).toString());
-    horizontal.setAttribute("y1", y.toString());
-    horizontal.setAttribute("x2", (x + size).toString());
-    horizontal.setAttribute("y2", y.toString());
-    horizontal.classList.add("drum-note", "drum-note-hf");
-    svg.appendChild(horizontal);
-
-    const vertical = createSVGElement("line");
-    vertical.setAttribute("x1", x.toString());
-    vertical.setAttribute("y1", (y - size).toString());
-    vertical.setAttribute("x2", x.toString());
-    vertical.setAttribute("y2", (y + size).toString());
-    vertical.classList.add("drum-note", "drum-note-hf");
-    svg.appendChild(vertical);
+    // noteheadPlusBlack (U+E0AF) is the SMuFL plus-sign notehead
+    // used for hi-hat foot (pedal) notes in drum notation.
+    const glyph = createSVGElement("text");
+    glyph.setAttribute("x", x.toString());
+    glyph.setAttribute("y", y.toString());
+    glyph.classList.add("drum-glyph");
+    glyph.textContent = GLYPHS.noteheadPlusBlack;
+    svg.appendChild(glyph);
 }

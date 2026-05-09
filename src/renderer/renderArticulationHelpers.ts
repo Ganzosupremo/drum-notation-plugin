@@ -1,28 +1,20 @@
 import { createSVGElement } from "./svgHelper";
 
+import { GLYPHS } from "./smufl";
+
 export function renderAccentMark(svg: SVGSVGElement, x: number, y: number, tipYOverride?: number) {
-    // Default: accent sits above the stem top (y - 35) with a small gap.
-    // Stemless noteheads (SD/BD) pass a lower tipYOverride (e.g. y - 16)
-    // so the chevron stays close to the notehead rather than floating far above.
-    const tipX = x + 6;
-    const tipY = tipYOverride ?? (y - 42);
-    const wingSpread = 5;
+    // articAccentAbove (U+E4A0) sits entirely above its text baseline.
+    // Default: baseline at stem top (y-35) with a 2px gap → y-37.
+    // tipYOverride lets callers shift the glyph for stemless noteheads.
+    const baselineY = tipYOverride !== undefined ? tipYOverride : y - 37;
 
-    const top = createSVGElement("line");
-    top.setAttribute("x1", (tipX - 10).toString());
-    top.setAttribute("y1", (tipY - wingSpread).toString());
-    top.setAttribute("x2", tipX.toString());
-    top.setAttribute("y2", tipY.toString());
-    top.classList.add("drum-note");
-    svg.appendChild(top);
-
-    const bottom = createSVGElement("line");
-    bottom.setAttribute("x1", (tipX - 10).toString());
-    bottom.setAttribute("y1", (tipY + wingSpread).toString());
-    bottom.setAttribute("x2", tipX.toString());
-    bottom.setAttribute("y2", tipY.toString());
-    bottom.classList.add("drum-note");
-    svg.appendChild(bottom);
+    const text = createSVGElement("text");
+    text.setAttribute("x", x.toString());
+    text.setAttribute("y", baselineY.toString());
+    text.classList.add("drum-glyph");
+    text.classList.add("drum-glyph-accent");
+    text.textContent = GLYPHS.articAccentAbove;
+    svg.appendChild(text);
 }
 
 export function renderGhostParens(svg: SVGSVGElement, x: number, y: number) {

@@ -2,6 +2,8 @@ import { Articulation } from "types";
 
 import { createSVGElement } from "renderer/svgHelper";
 
+import { GLYPHS } from "../smufl";
+
 import { renderStem } from "../renderStem";
 
 import { renderAccentMark, renderGhostParens } from "../renderArticulationHelpers";
@@ -16,26 +18,24 @@ export function renderSnareNote(
         const g = createSVGElement("g");
         g.setAttribute("opacity", "0.45");
 
-        const ellipse = createSVGElement("ellipse");
-        ellipse.setAttribute("cx", x.toString());
-        ellipse.setAttribute("cy", y.toString());
-        ellipse.setAttribute("rx", "5");
-        ellipse.setAttribute("ry", "3.5");
-        ellipse.classList.add("drum-note-fill");
-        g.appendChild(ellipse);
+        const glyph = createSVGElement("text");
+        glyph.setAttribute("x", x.toString());
+        glyph.setAttribute("y", y.toString());
+        glyph.classList.add("drum-glyph");
+        glyph.textContent = GLYPHS.noteheadBlack;
+        g.appendChild(glyph);
 
         svg.appendChild(g);
         renderGhostParens(svg, x, y);
         return;
     }
 
-    const ellipse = createSVGElement("ellipse");
-    ellipse.setAttribute("cx", x.toString());
-    ellipse.setAttribute("cy", y.toString());
-    ellipse.setAttribute("rx", "7");
-    ellipse.setAttribute("ry", "5");
-    ellipse.classList.add("drum-note-fill");
-    svg.appendChild(ellipse);
+    const glyph = createSVGElement("text");
+    glyph.setAttribute("x", x.toString());
+    glyph.setAttribute("y", y.toString());
+    glyph.classList.add("drum-glyph");
+    glyph.textContent = GLYPHS.noteheadBlack;
+    svg.appendChild(glyph);
 
     renderStem(svg, x, y);
 

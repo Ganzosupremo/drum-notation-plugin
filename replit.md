@@ -46,6 +46,7 @@ Copy these files into `<Vault>/.obsidian/plugins/drum-notation-plugin/`:
 - `main.js`
 - `manifest.json`
 - `styles.css`
+- `Bravura.woff2` — SMuFL music font (required for notehead glyphs)
 
 ## User Preferences
 

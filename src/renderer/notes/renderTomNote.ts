@@ -1,5 +1,7 @@
 import { createSVGElement } from "renderer/svgHelper";
 
+import { GLYPHS } from "../smufl";
+
 import { renderStem } from "../renderStem";
 
 const TOM_Y_OFFSET: Record<string, number> = {
@@ -17,13 +19,12 @@ export function renderTomNote(
     const offset = TOM_Y_OFFSET[instrument] ?? 0;
     const cy = y + offset;
 
-    const ellipse = createSVGElement("ellipse");
-    ellipse.setAttribute("cx", x.toString());
-    ellipse.setAttribute("cy", cy.toString());
-    ellipse.setAttribute("rx", "7");
-    ellipse.setAttribute("ry", "5");
-    ellipse.classList.add("drum-note-fill");
-    svg.appendChild(ellipse);
+    const glyph = createSVGElement("text");
+    glyph.setAttribute("x", x.toString());
+    glyph.setAttribute("y", cy.toString());
+    glyph.classList.add("drum-glyph");
+    glyph.textContent = GLYPHS.noteheadBlack;
+    svg.appendChild(glyph);
 
-    renderStem(svg, x, y + offset);
+    renderStem(svg, x, cy);
 }

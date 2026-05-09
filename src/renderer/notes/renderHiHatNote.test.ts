@@ -49,22 +49,28 @@ describe("renderHiHatNote — accent-open SVG output", () => {
         );
     });
 
-    test("accent-open renders accent-mark lines (two lines from renderAccentMark)", () => {
+    test("accent-open renders an accent-mark glyph element", () => {
         const svg = makeSVG();
         renderHiHatNote(svg as any, 50, 100, "accent-open");
 
-        const lines = svg.children.filter(c => c.tagName === "line");
+        // After SMuFL migration: accent is a <text> glyph, not lines.
+        const texts = svg.children.filter(c => c.tagName === "text");
         assert.ok(
-            lines.length >= 2,
-            `expected at least 2 line elements (stem + accent), got ${lines.length}`
+            texts.length >= 1,
+            `expected at least 1 text element (accent glyph), got ${texts.length}`
+        );
+        assert.ok(
+            texts.some(t => t.classList.has("drum-glyph-accent")),
+            "expected a text element with class drum-glyph-accent"
         );
     });
 
-    test("accent-open total child count: 1 circle + 3 lines (stem + 2 accent lines)", () => {
+    test("accent-open total child count: 1 circle + 1 stem + 1 accent glyph", () => {
         const svg = makeSVG();
         renderHiHatNote(svg as any, 50, 100, "accent-open");
 
-        assert.equal(svg.children.length, 4, "expected circle, stem line, and 2 accent lines");
+        // circle (open HH head) + line (stem) + text (accent glyph)
+        assert.equal(svg.children.length, 3, "expected circle, stem line, and accent glyph text");
     });
 
     test("accent-open circle uses the provided x and y coordinates", () => {
@@ -142,7 +148,7 @@ describe("renderHiHatNote — normal and accent still work correctly", () => {
         assert.equal(circles.length, 0, "accent HH should not render a circle");
     });
 
-    test("'accent' renders more lines than 'normal' (adds accent mark)", () => {
+    test("'accent' renders more elements than 'normal' (adds accent glyph)", () => {
         const svgNormal = makeSVG();
         renderHiHatNote(svgNormal as any, 50, 100, "normal");
 
@@ -151,7 +157,7 @@ describe("renderHiHatNote — normal and accent still work correctly", () => {
 
         assert.ok(
             svgAccent.children.length > svgNormal.children.length,
-            "accent should add accent-mark lines on top of the normal X-cross"
+            "accent should add an accent-mark glyph on top of the normal X-cross"
         );
     });
 });

@@ -1,3 +1,16 @@
+/*
+ * Bravura is a SMuFL-compliant music font by Steinberg.
+ * The font file (Bravura.woff2) must be installed alongside this CSS
+ * in the plugin directory. On Obsidian desktop the font-face is also
+ * injected dynamically by main.js using the correct app:// resource path.
+ */
+@font-face {
+    font-family: 'Bravura';
+    src: url('Bravura.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
 .drum-container {
     overflow-x: auto;
     margin-top: 10px;
@@ -63,6 +76,36 @@
     stroke-width: 3;
 }
 
+/*
+ * SMuFL glyph notehead — rendered as an SVG <text> element using the
+ * Bravura font. dominant-baseline: central places the staff line (y=0
+ * in the font's coordinate space) at the SVG y-coordinate, so noteheads
+ * are vertically centered on the row. text-anchor: middle centers the
+ * glyph's advance width on the SVG x-coordinate.
+ *
+ * font-size: 40px — derived from the Bravura bounding box:
+ *   noteheadBlack height = 1.0 staff space = 0.25em → 40px × 0.25 = 10px,
+ *   matching the previous hand-drawn ellipse (ry=5 → 10px diameter).
+ */
+.drum-glyph {
+    font-family: 'Bravura', serif;
+    font-size: 40px;
+    fill: #111;
+    dominant-baseline: central;
+    text-anchor: middle;
+}
+
+/*
+ * Accent articulation glyph (articAccentAbove U+E4A0).
+ * The SMuFL accent glyph sits entirely above its text baseline, so
+ * the baseline is placed at the stem top and the glyph extends upward.
+ * A smaller font-size keeps the chevron proportional to the noteheads.
+ */
+.drum-glyph-accent {
+    font-size: 24px;
+    dominant-baseline: auto;
+}
+
 .drum-note-open-hh {
     stroke: #111;
     stroke-width: 2;
@@ -75,24 +118,16 @@
     opacity: 0.6;
 }
 
+.drum-note-fallback {
+    opacity: 0.6;
+}
+
 .drum-note-ride {
     stroke: #111;
 }
 
 .drum-note-crash {
     stroke: #111;
-}
-
-.drum-note-crash-ring {
-    stroke: #111;
-    stroke-width: 1.5;
-    fill: none;
-}
-
-.drum-note-fallback {
-    stroke: #666;
-    stroke-width: 1.5;
-    fill: none;
 }
 
 .drum-note-hf {

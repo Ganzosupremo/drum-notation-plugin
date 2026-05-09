@@ -14,6 +14,8 @@ export default class DrumNotationPlugin extends Plugin {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
         this.addSettingTab(new SampleSettingTab(this.app, this));
 
+        this.loadBravuraFont();
+
         this.registerMarkdownCodeBlockProcessor(
             "drums",
             (source, el, ctx) => {
@@ -44,6 +46,39 @@ export default class DrumNotationPlugin extends Plugin {
                 }
             }
         );
+    }
+
+    /**
+     * Inject a @font-face declaration that points Bravura.woff2 at the
+     * correct app:// resource URL for this plugin's directory.
+     *
+     * Obsidian desktop (Electron) serves local files via an app:// protocol.
+     * The static @font-face in styles.css uses a bare relative URL which may
+     * not resolve correctly in all Obsidian versions, so we also inject the
+     * rule dynamically using the FileSystemAdapter's getResourcePath.
+     */
+    private loadBravuraFont(): void {
+        const adapter = this.app.vault.adapter as unknown as Record<string, unknown>;
+        const getResourcePath = adapter["getResourcePath"];
+
+        if (typeof getResourcePath !== "function") {
+            return;
+        }
+
+        const manifestDir = (this.manifest as unknown as Record<string, unknown>)["dir"];
+        if (typeof manifestDir !== "string" || !manifestDir) {
+            return;
+        }
+
+        const fontSrc = (getResourcePath as (p: string) => string).call(
+            adapter,
+            manifestDir + "/Bravura.woff2"
+        );
+
+        const style = document.createElement("style");
+        style.textContent =
+            `@font-face{font-family:'Bravura';src:url('${fontSrc}')format('woff2');font-weight:normal;font-style:normal;}`;
+        document.head.appendChild(style);
     }
 
     async saveSettings() {
