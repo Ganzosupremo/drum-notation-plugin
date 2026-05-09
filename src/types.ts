@@ -38,4 +38,6 @@ export interface BeamGroup {
     endX: number;
 
     y: number;
+
+    beamCount: number;
 }

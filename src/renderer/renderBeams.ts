@@ -9,33 +9,40 @@ export function renderBeams(
 
     groups.forEach(group => {
 
-        const beam =
-            createSVGElement("line");
+        const count = group.beamCount ?? 1;
 
-        beam.setAttribute(
-            "x1",
-            group.startX.toString()
-        );
+        for (let b = 0; b < count; b++) {
 
-        beam.setAttribute(
-            "y1",
-            (group.y - 18).toString()
-        );
+            const beam = createSVGElement("line");
 
-        beam.setAttribute(
-            "x2",
-            group.endX.toString()
-        );
+            // Stack additional beams 4 px above the primary beam
+            const yPos = group.y - 18 - b * 4;
 
-        beam.setAttribute(
-            "y2",
-            (group.y - 18).toString()
-        );
+            beam.setAttribute(
+                "x1",
+                group.startX.toString()
+            );
 
-        beam.classList.add(
-            "drum-beam"
-        );
+            beam.setAttribute(
+                "y1",
+                yPos.toString()
+            );
 
-        svg.appendChild(beam);
+            beam.setAttribute(
+                "x2",
+                group.endX.toString()
+            );
+
+            beam.setAttribute(
+                "y2",
+                yPos.toString()
+            );
+
+            beam.classList.add(
+                "drum-beam"
+            );
+
+            svg.appendChild(beam);
+        }
     });
 }

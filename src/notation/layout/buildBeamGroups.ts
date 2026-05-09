@@ -16,35 +16,49 @@ export function buildBeamGroups(
         ? patternLength / beatsPerBar
         : 0;
 
-    const gridCellsPerBeat = beatWidth > 0 ? Math.round(beatWidth) : 0;
-    const maxIndexGap = gridCellsPerBeat > 0 && subdivisionsPerBeatOverride && subdivisionsPerBeatOverride > 0
-        ? Math.max(1, Math.round(gridCellsPerBeat / subdivisionsPerBeatOverride))
-        : (gridCellsPerBeat > 0 ? Math.max(1, Math.floor(gridCellsPerBeat / 2)) : 1);
+    if (beatWidth <= 0) return groups;
 
-    for (let i = 0; i < notes.length - 1; i++) {
+    // Determine subdivisions per beat
+    let subdivisionsPerBeat: number;
 
-        const current = notes[i] as NoteEvent;
+    if (subdivisionsPerBeatOverride && subdivisionsPerBeatOverride > 0) {
+        subdivisionsPerBeat = subdivisionsPerBeatOverride;
+    } else {
+        const rawSubdivisions = patternLength / beatsPerBar;
+        const supported = [2, 3, 4];
+        const closest = supported.reduce((prev, current) =>
+            Math.abs(current - rawSubdivisions) < Math.abs(prev - rawSubdivisions)
+                ? current
+                : prev
+        );
+        subdivisionsPerBeat = Number.isFinite(rawSubdivisions) ? closest : 2;
+    }
 
-        const next = notes[i + 1] as NoteEvent;
+    // subdiv 4 → two stacked beams; subdiv 2 or 3 → one beam
+    const beamCount = subdivisionsPerBeat === 4 ? 2 : 1;
 
-        // only consecutive subdivisions
-        if (next.index - current.index > maxIndexGap)
-            continue;
-
-        if (beatWidth > 0) {
-            const currentBeat = Math.floor(current.index / beatWidth);
-            const nextBeat = Math.floor(next.index / beatWidth);
-
-            if (currentBeat !== nextBeat) continue;
+    // Group notes by beat index
+    const beatGroups = new Map<number, NoteEvent[]>();
+    for (const note of notes) {
+        const beat = Math.floor(note.index / beatWidth);
+        if (!beatGroups.has(beat)) {
+            beatGroups.set(beat, []);
         }
+        beatGroups.get(beat)!.push(note);
+    }
 
+    // Emit one BeamGroup per beat that has 2+ notes, spanning first → last note
+    for (const beatNotes of beatGroups.values()) {
+        if (beatNotes.length < 2) continue;
+        const sorted = beatNotes.slice().sort((a, b) => a.index - b.index);
+        const first = sorted[0];
+        const last = sorted[sorted.length - 1];
+        if (!first || !last) continue;
         groups.push({
-
-            startX: current.x,
-
-            endX: next.x,
-
-            y
+            startX: first.x,
+            endX: last.x,
+            y,
+            beamCount,
         });
     }
 
