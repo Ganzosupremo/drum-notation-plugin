@@ -48,6 +48,15 @@ Copy these files into `<Vault>/.obsidian/plugins/drum-notation-plugin/`:
 - `styles.css`
 - `Bravura.woff2` — SMuFL music font (required for notehead glyphs)
 
+### Bravura font — two copies explained
+
+| Location | Purpose |
+|---|---|
+| `Bravura.woff2` (project root) | Installed into the plugin directory alongside `main.js`. `styles.css` references it as `url('Bravura.woff2')` (relative to the CSS file). `main.ts` `loadBravuraFont()` also resolves it via `manifest.dir + "/Bravura.woff2"` using Obsidian's `app://` resource path. |
+| `assets/Bravura.woff2` | Source asset kept in version control for reference and build tooling. Not directly referenced at runtime. |
+
+Both copies must be kept in sync (same binary). The root copy is what ships to users; `assets/` is the tracked source.
+
 ## User Preferences
 
 - Maintain the existing modular src/ structure.

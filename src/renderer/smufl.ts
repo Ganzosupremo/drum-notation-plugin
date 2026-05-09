@@ -1,28 +1,14 @@
 /**
- * SMuFL glyph registry for the drum notation plugin.
+ * SMuFL glyph registry — resolves Bravura Unicode characters at module load.
  *
- * Codepoints are resolved at module load time from two authoritative sources:
+ * Two assets are cross-referenced:
+ *   assets/bravura_metadata.json  Bravura glyph inventory (glyphBBoxes).
+ *                                 Confirms each glyph is present in the font.
+ *   assets/glyphnames.json        SMuFL canonical name→codepoint map (W3C).
+ *                                 Provides the "U+XXXX" codepoint string.
  *
- *   assets/bravura_metadata.json — Bravura-specific glyph inventory (Steinberg).
- *     Contains glyphBBoxes (bounding boxes in staff spaces) and
- *     glyphAdvanceWidths for every glyph actually shipped in the Bravura font.
- *     Used here to confirm each glyph exists in the installed font binary.
- *
- *   assets/glyphnames.json — SMuFL canonical glyph-name→codepoint map (W3C).
- *     Maps every SMuFL glyph name to its Unicode codepoint ("U+E0A4") and
- *     a human-readable description.
- *
- * resolveGlyph() cross-references both files: it throws if the glyph is absent
- * from bravura_metadata.json (not in Bravura) and separately if the name is
- * absent from glyphnames.json (not a valid SMuFL glyph name).
- *
- * Bravura bounding boxes from assets/bravura_metadata.json (staff spaces):
- *   noteheadBlack:     SW=[0,    -0.5]  NE=[1.18,  0.5 ]
- *   noteheadHalf:      SW=[0,    -0.5]  NE=[1.18,  0.5 ]
- *   noteheadXBlack:    SW=[0,    -0.5]  NE=[1.16,  0.5 ]
- *   noteheadPlusBlack: SW=[-0.004,-0.5] NE=[0.996, 0.5 ]
- *   noteheadCircleX:   SW=[0,    -0.5]  NE=[0.996, 0.5 ]
- *   articAccentAbove:  SW=[0,   0.004]  NE=[1.356, 0.98 ]  (above baseline)
+ * resolveGlyph() throws at startup if a name is missing from either file,
+ * making misconfiguration fail fast rather than silently render blank boxes.
  */
 
 import bravuraMetadata from "../../assets/bravura_metadata.json";
