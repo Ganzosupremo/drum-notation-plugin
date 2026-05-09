@@ -24,13 +24,16 @@ function makeSVG(): MockSVGElement {
     return new MockSVGElement("svg");
 }
 
-before(() => {
+type RenderHiHatNote = typeof import("./renderHiHatNote").renderHiHatNote;
+let renderHiHatNote: RenderHiHatNote;
+
+before(async () => {
     (globalThis as any).document = {
         createElementNS: (_ns: string, tag: string) => new MockSVGElement(tag),
     };
+    const mod = await import("./renderHiHatNote");
+    renderHiHatNote = mod.renderHiHatNote;
 });
-
-const { renderHiHatNote } = await import("./renderHiHatNote");
 
 describe("renderHiHatNote — accent-open SVG output", () => {
 
