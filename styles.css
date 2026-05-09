@@ -23,6 +23,14 @@
     font-family: monospace;
 }
 
+.drum-label--cymbal {
+    fill: #aaddff;
+}
+
+.drum-label--tom {
+    fill: #ffcc88;
+}
+
 .drum-grid {
     stroke: #444;
     stroke-width: 1;
