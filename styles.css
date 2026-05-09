@@ -5,108 +5,103 @@
 }
 
 .drum-warning {
-    color: #f3c27b;
+    background: #fff8e1;
+    color: #7a5800;
     font-size: 12px;
     font-family: monospace;
     margin-bottom: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
 }
 
 .drum-svg {
-    background-color: #111;
-    border-radius: 10px;
+    background-color: #fafafa;
+    border-radius: 6px;
     padding: 10px;
 }
 
 .drum-label {
-    fill: white;
-    font-size: 14px;
+    fill: #222;
+    font-size: 13px;
     font-family: monospace;
 }
 
-.drum-label--cymbal {
-    fill: #aaddff;
-}
-
-.drum-label--tom {
-    fill: #ffcc88;
-}
-
-.drum-grid {
-    stroke: #444;
+.drum-staff-line {
+    stroke: #bbb;
     stroke-width: 1;
 }
 
 .drum-hit {
-    fill: #ffffff;
+    fill: #222;
     font-size: 18px;
     font-family: monospace;
     dominant-baseline: middle;
 }
 
 .drum-bar {
-    stroke: #ffffff;
-    stroke-width: 3;
+    stroke: #333;
+    stroke-width: 2;
 }
 
 .drum-note {
-    stroke: white;
+    stroke: #111;
     stroke-width: 2;
 }
 
 .drum-note-fill {
-    fill: white;
+    fill: #111;
 }
 
 .drum-subdivision {
-    fill: #888;
+    fill: #555;
     font-size: 12px;
     font-family: monospace;
 }
 
 .drum-beam {
-    stroke: white;
+    stroke: #111;
     stroke-width: 3;
 }
 
 .drum-note-open-hh {
-    stroke: white;
+    stroke: #111;
     stroke-width: 2;
     fill: none;
 }
 
 .drum-note-ghost-paren {
-    fill: white;
+    fill: #333;
     font-family: monospace;
-    opacity: 0.55;
+    opacity: 0.6;
 }
 
 .drum-note-ride {
-    stroke: #aaddff;
+    stroke: #111;
 }
 
 .drum-note-crash {
-    stroke: #ffcc88;
+    stroke: #111;
 }
 
 .drum-note-crash-ring {
-    stroke: #ffcc88;
+    stroke: #111;
     stroke-width: 1.5;
     fill: none;
 }
 
 .drum-note-fallback {
-    stroke: #aaaaaa;
+    stroke: #666;
     stroke-width: 1.5;
     fill: none;
 }
 
 .drum-note-hf {
-    stroke: #cccccc;
+    stroke: #444;
     stroke-width: 2;
 }
 
 .drum-feel-indicator {
-    fill: #aaaaaa;
+    fill: #777;
     font-size: 11px;
     font-family: monospace;
     font-style: italic;

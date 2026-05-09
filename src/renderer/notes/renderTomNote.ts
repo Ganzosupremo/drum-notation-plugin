@@ -15,14 +15,15 @@ export function renderTomNote(
     y: number
 ) {
     const offset = TOM_Y_OFFSET[instrument] ?? 0;
-    const cy = y - 2 + offset;
+    const cy = y + offset;
 
-    const circle = createSVGElement("circle");
-    circle.setAttribute("cx", x.toString());
-    circle.setAttribute("cy", cy.toString());
-    circle.setAttribute("r", "6");
-    circle.classList.add("drum-note-fill", `drum-note-${instrument.toLowerCase()}`);
-    svg.appendChild(circle);
+    const ellipse = createSVGElement("ellipse");
+    ellipse.setAttribute("cx", x.toString());
+    ellipse.setAttribute("cy", cy.toString());
+    ellipse.setAttribute("rx", "7");
+    ellipse.setAttribute("ry", "5");
+    ellipse.classList.add("drum-note-fill");
+    svg.appendChild(ellipse);
 
     renderStem(svg, x, y + offset);
 }

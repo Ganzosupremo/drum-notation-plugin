@@ -9,13 +9,13 @@ import {
 
 import { createSVGElement } from "./svgHelper";
 
-import { renderGrid } from "./renderGrid";
+import { renderStaffLine } from "./renderStaffLine";
 
 import { renderLabel } from "./renderLabel";
 
 import { renderNotes } from "./renderNotes";
 
-import { renderBarLines } from "./renderBarLines";
+import { renderBarLines, renderBracketLines } from "./renderBarLines";
 
 import { renderSubdivisionLabels } from "./renderSubdivisionLabels";
 
@@ -23,9 +23,13 @@ import { buildBeamGroups } from "notation/layout/buildBeamGroups";
 
 import { renderBeams } from "./renderBeams";
 
+import { buildLayout } from "notation/layout/buildLayout";
+
 import { renderFeelIndicator } from "./renderFeelIndicator";
 
-import { buildLayout } from "notation/layout/buildLayout";
+// Extra vertical space above the first row so 30px stems don't collide
+// with the subdivision-label row at y=20.
+const EXTRA_TOP = 20;
 
 export function renderDrumNotation(
     notation: DrumNotation,
@@ -34,10 +38,9 @@ export function renderDrumNotation(
 ) {
     const beatsPerBar = timeSignature?.beatsPerBar ?? 4;
     const subdivisionsPerBeat = notation.subdivisionsPerBeat;
-    const height = notation.lines.length * ROW_HEIGHT + 40;
+    const height = notation.lines.length * ROW_HEIGHT + TOP_OFFSET + EXTRA_TOP;
 
     const wrapper = document.createElement("div");
-
     wrapper.className = "drum-container";
 
     if (notation.warnings && notation.warnings.length > 0) {
@@ -47,29 +50,20 @@ export function renderDrumNotation(
         wrapper.appendChild(warningEl);
     }
 
-    // Build all layouts up front so cellCount is available for width calculation
-    // and subdivision labels before the per-row render loop runs.
     const layouts = notation.lines.map((line) => ({
         line,
         ...buildLayout(line.instrument, line.pattern),
     }));
 
     const maxCellCount = layouts.reduce((m, l) => Math.max(m, l.cellCount), 0);
-    // Add one cell of right-side padding so the last notehead is not flush with
-    // the SVG edge.  Enforce a reasonable minimum width for very short patterns.
     const svgWidth = Math.max(400, START_X + (maxCellCount + 1) * CELL_WIDTH);
 
     const svg = createSVGElement("svg");
-
     svg.setAttribute("width", svgWidth.toString());
-
     svg.setAttribute("height", height.toString());
-
     svg.classList.add("drum-svg");
 
     const firstLayout = layouts[0];
-
-    renderFeelIndicator(svg, notation.feel);
 
     renderSubdivisionLabels(
         svg,
@@ -78,20 +72,22 @@ export function renderDrumNotation(
         subdivisionsPerBeat
     );
 
+    renderFeelIndicator(svg, notation.feel);
+
+    // Collect per-row y values for later use in bar lines and brackets.
+    const rowYs: number[] = [];
+
     layouts.forEach(({ line, notes, cellCount }, rowIndex) => {
-        const y = rowIndex * ROW_HEIGHT + TOP_OFFSET;
+        const y = rowIndex * ROW_HEIGHT + TOP_OFFSET + EXTRA_TOP;
+        rowYs.push(y);
 
         renderLabel(svg, line.instrument, y);
 
-        renderGrid(svg, y, cellCount);
+        renderStaffLine(svg, y, svgWidth);
 
         renderNotes(svg, notes, y);
 
-        renderBarLines(svg, y, cellCount, beatsPerBar, subdivisionsPerBeat);
-
-        // RENDER BEAMS for cymbal rows
         if (line.instrument === "HH" || line.instrument === "RC" || line.instrument === "CC") {
-
             const groups = buildBeamGroups(
                 notes,
                 y,
@@ -103,7 +99,17 @@ export function renderDrumNotation(
         }
     });
 
-    wrapper.appendChild(svg);
+    // Full-height bar lines and bracket after all rows are rendered.
+    if (rowYs.length > 0) {
+        const firstY = rowYs[0] as number;
+        const lastY = rowYs[rowYs.length - 1] as number;
+        const topY = firstY - 18;
+        const bottomY = lastY + 12;
 
+        renderBarLines(svg, topY, bottomY, maxCellCount, beatsPerBar, subdivisionsPerBeat);
+        renderBracketLines(svg, topY, bottomY, maxCellCount);
+    }
+
+    wrapper.appendChild(svg);
     container.appendChild(wrapper);
 }
