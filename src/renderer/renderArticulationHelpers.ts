@@ -21,8 +21,6 @@ export function renderGhostParens(svg: SVGSVGElement, x: number, y: number) {
     const openParen = createSVGElement("text");
     openParen.setAttribute("x", (x - 12).toString());
     openParen.setAttribute("y", (y + 4).toString());
-    openParen.setAttribute("font-size", "14");
-    openParen.setAttribute("text-anchor", "middle");
     openParen.classList.add("drum-note-ghost-paren");
     openParen.textContent = "(";
     svg.appendChild(openParen);
@@ -30,8 +28,6 @@ export function renderGhostParens(svg: SVGSVGElement, x: number, y: number) {
     const closeParen = createSVGElement("text");
     closeParen.setAttribute("x", (x + 12).toString());
     closeParen.setAttribute("y", (y + 4).toString());
-    closeParen.setAttribute("font-size", "14");
-    closeParen.setAttribute("text-anchor", "middle");
     closeParen.classList.add("drum-note-ghost-paren");
     closeParen.textContent = ")";
     svg.appendChild(closeParen);

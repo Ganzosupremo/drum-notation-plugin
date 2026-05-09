@@ -13,6 +13,7 @@ export function renderHiHatFootNote(
     glyph.setAttribute("x", x.toString());
     glyph.setAttribute("y", y.toString());
     glyph.classList.add("drum-glyph");
+    glyph.classList.add("drum-glyph-plus");
     glyph.textContent = GLYPHS.noteheadPlusBlack;
     svg.appendChild(glyph);
 }

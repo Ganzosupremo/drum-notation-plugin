@@ -20,6 +20,7 @@ export function renderCrashNote(
     glyph.setAttribute("x", x.toString());
     glyph.setAttribute("y", ny.toString());
     glyph.classList.add("drum-glyph");
+    glyph.classList.add("drum-glyph-circle-x");
     glyph.textContent = GLYPHS.noteheadCircleX;
     svg.appendChild(glyph);
 

@@ -78,10 +78,15 @@
 
 /*
  * SMuFL glyph notehead — rendered as an SVG <text> element using the
- * Bravura font. dominant-baseline: central places the staff line (y=0
- * in the font's coordinate space) at the SVG y-coordinate, so noteheads
- * are vertically centered on the row. text-anchor: middle centers the
- * glyph's advance width on the SVG x-coordinate.
+ * Bravura font.
+ *
+ * dominant-baseline: auto — places the font's alphabetic baseline at the
+ * SVG y-coordinate. Bravura noteheads are symmetric around y=0 in font
+ * space (bBoxSW[1]=−0.5, bBoxNE[1]=+0.5 staff spaces), so the baseline
+ * equals the glyph's vertical centre. This gives precise centering on each
+ * instrument row without any additional y-shift.
+ *
+ * text-anchor: middle — centres the glyph's advance width on the SVG x.
  *
  * font-size: 40px — derived from the Bravura bounding box:
  *   noteheadBlack height = 1.0 staff space = 0.25em → 40px × 0.25 = 10px,
@@ -91,7 +96,7 @@
     font-family: 'Bravura', serif;
     font-size: 40px;
     fill: #111;
-    dominant-baseline: central;
+    dominant-baseline: auto;
     text-anchor: middle;
 }
 
@@ -106,19 +111,45 @@
 }
 
 /*
+ * Crash cymbal notehead (noteheadCircleX U+E0B3) — an open circled-X glyph.
+ * Its open outline renders visually lighter than the solid noteheadBlack, so
+ * a slight font-size increase restores comparable visual weight.
+ * 1 staff space at 42px = 10.5px (vs 10px for noteheadBlack at 40px).
+ */
+.drum-glyph-circle-x {
+    font-size: 42px;
+}
+
+/*
+ * Hi-hat foot / pedal notehead (noteheadPlusBlack U+E0AF) — a plus-sign
+ * glyph whose thin arms appear lighter than the filled noteheadBlack oval.
+ * A small size bump aligns its perceived weight with other noteheads.
+ * 1 staff space at 44px = 11px.
+ */
+.drum-glyph-plus {
+    font-size: 44px;
+}
+
+/*
  * Accent articulation glyph (articAccentAbove U+E4A0).
- * The SMuFL accent glyph sits entirely above its text baseline, so
- * the baseline is placed at the stem top and the glyph extends upward.
- * A smaller font-size keeps the chevron proportional to the noteheads.
+ * The SMuFL accent glyph sits entirely above its text baseline
+ * (bBoxSW[1]=0.004, bBoxNE[1]=0.98 staff spaces), so placing the baseline
+ * at the stem top (y − 35) with a 2 px gap (y − 37) causes the chevron to
+ * extend upward from there. dominant-baseline: auto preserves this
+ * baseline-relative positioning. 28px font-size gives a chevron height of
+ * ≈ 6.8px (0.976 ss × 7px/ss), proportional to the 10px noteheads and
+ * visually snug above the stem top rather than floating loose.
  */
 .drum-glyph-accent {
-    font-size: 24px;
+    font-size: 28px;
     dominant-baseline: auto;
 }
 
 .drum-note-ghost-paren {
     fill: #333;
+    font-size: 14px;
     font-family: monospace;
+    text-anchor: middle;
     opacity: 0.6;
 }
 
