@@ -1,6 +1,6 @@
 import { Plugin } from "obsidian";
 
-import { parseDrumNotation } from "./parser";
+import { buildTimeSignature, parseDrumNotation } from "./parser";
 import { renderDrumNotation } from "./renderer/renderNotation";
 import { DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab } from "./settings";
 
@@ -16,13 +16,23 @@ export default class DrumNotationPlugin extends Plugin {
 
         this.registerMarkdownCodeBlockProcessor(
             "drums",
-            (source, el) => {
+            (source, el, ctx) => {
 
                 try {
 
-                    const parsed = parseDrumNotation(source);
+                    const sectionInfo = ctx.getSectionInfo(el);
+                    const firstLine = sectionInfo?.text?.split("\n")[0] ?? "";
+                    const infoMatch = firstLine.match(/^```drums\s*(.*)$/i);
+                    const headerLine = infoMatch?.[1]?.trim() || undefined;
 
-                    renderDrumNotation(parsed, el);
+                    const parsed = parseDrumNotation(source, headerLine);
+                    const beatsPerBar = parsed.beatsPerBar
+                        ?? this.settings.beatsPerBar
+                        ?? DEFAULT_SETTINGS.beatsPerBar;
+                    const timeSignature = parsed.timeSignature
+                        ?? buildTimeSignature(beatsPerBar, 4);
+
+                    renderDrumNotation(parsed, el, timeSignature);
 
                 } catch (error) {
 

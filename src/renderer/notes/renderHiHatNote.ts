@@ -1,5 +1,7 @@
 import { createSVGElement } from "renderer/svgHelper";
 
+import { renderStem } from "../renderStem";
+
 export function renderHiHatNote(
     svg: SVGSVGElement,
     x: number,
@@ -33,4 +35,6 @@ export function renderHiHatNote(
     line2.classList.add("drum-note");
 
     svg.appendChild(line2);
+
+    renderStem(svg, x, y);
 }

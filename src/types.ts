@@ -3,8 +3,21 @@ export interface DrumLine {
     pattern: string;
 }
 
+export type MeterType = "simple" | "compound";
+
+export interface TimeSignature {
+    beatsPerMeasure: number;
+    beatUnit: number;
+    meterType: MeterType;
+    beatsPerBar: number;
+}
+
 export interface DrumNotation {
     lines: DrumLine[];
+    beatsPerBar?: number;
+    timeSignature?: TimeSignature;
+    subdivisionsPerBeat?: number;
+    warnings?: string[];
 }
 
 export interface NoteEvent {
@@ -16,4 +29,13 @@ export interface NoteEvent {
     index: number;
 
     x: number;
+}
+
+export interface BeamGroup {
+
+    startX: number;
+
+    endX: number;
+
+    y: number;
 }

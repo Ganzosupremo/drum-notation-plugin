@@ -1,13 +1,13 @@
-import {App, PluginSettingTab, Setting} from "obsidian";
+import { App, PluginSettingTab, Setting } from "obsidian";
 import MyPlugin from "./main";
 
 export interface MyPluginSettings {
-	mySetting: string;
+	beatsPerBar: number;
 }
 
 export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-}
+	beatsPerBar: 4
+};
 
 export class SampleSettingTab extends PluginSettingTab {
 	plugin: MyPlugin;
@@ -23,13 +23,16 @@ export class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc('It\'s a secret')
+			.setName('Beats per bar')
+			.setDesc('Default time signature numerator used for beam grouping.')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setPlaceholder('4')
+				.setValue(this.plugin.settings.beatsPerBar.toString())
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
+					const parsed = Number.parseInt(value, 10);
+					this.plugin.settings.beatsPerBar = Number.isFinite(parsed) && parsed > 0
+						? parsed
+						: DEFAULT_SETTINGS.beatsPerBar;
 					await this.plugin.saveSettings();
 				}));
 	}
