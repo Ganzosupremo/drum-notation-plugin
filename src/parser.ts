@@ -7,10 +7,21 @@ type HeaderParseResult = {
     warnings: string[];
 };
 
+function isPowerOfTwo(n: number): boolean {
+    return n > 0 && (n & (n - 1)) === 0;
+}
+
 function buildTimeSignature(
     beatsPerMeasure: number,
-    beatUnit: number
+    beatUnit: number,
+    validate = false
 ): TimeSignature {
+    if (validate && !isPowerOfTwo(beatUnit)) {
+        throw new Error(
+            `Invalid beat unit "${beatUnit}": beat unit must be a power of 2 (1, 2, 4, 8, 16, 32)`
+        );
+    }
+
     const meterType: MeterType =
         beatUnit === 8 && beatsPerMeasure % 3 === 0 && beatsPerMeasure >= 6
             ? "compound"
@@ -79,6 +90,12 @@ function parseHeaderLine(
         if (timeMatch?.[1] && timeMatch?.[2]) {
             const beats = Number.parseInt(timeMatch[1], 10);
             const unit = Number.parseInt(timeMatch[2], 10);
+            if (!isPowerOfTwo(unit)) {
+                warnings.push(
+                    `Invalid time signature beat unit "${unit}" in "${value}": beat unit must be a power of 2 (1, 2, 4, 8, 16, 32)`
+                );
+                return {};
+            }
             return { timeSignature: buildTimeSignature(beats, unit) };
         }
 
@@ -224,4 +241,4 @@ export function parseDrumNotation(
     };
 }
 
-export { buildTimeSignature };
+export { buildTimeSignature, isPowerOfTwo };

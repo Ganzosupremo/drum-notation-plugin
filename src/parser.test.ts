@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { parseDrumNotation, buildTimeSignature } from "./parser";
+import { parseDrumNotation, buildTimeSignature, isPowerOfTwo } from "./parser";
 
 describe("inner pipe segment-joining (parseDrumNotation)", () => {
 
@@ -481,6 +481,183 @@ describe("header directives — malformed values produce warnings", () => {
         const result = parseDrumNotation("HH |x-x-x-x-|", "time 4/4 subdiv 4");
 
         assert.equal(result.warnings, undefined);
+    });
+});
+
+describe("beat unit validation — isPowerOfTwo helper", () => {
+
+    test("1 is a valid power of 2", () => {
+        assert.equal(isPowerOfTwo(1), true);
+    });
+
+    test("2 is a valid power of 2", () => {
+        assert.equal(isPowerOfTwo(2), true);
+    });
+
+    test("4 is a valid power of 2", () => {
+        assert.equal(isPowerOfTwo(4), true);
+    });
+
+    test("8 is a valid power of 2", () => {
+        assert.equal(isPowerOfTwo(8), true);
+    });
+
+    test("16 is a valid power of 2", () => {
+        assert.equal(isPowerOfTwo(16), true);
+    });
+
+    test("32 is a valid power of 2", () => {
+        assert.equal(isPowerOfTwo(32), true);
+    });
+
+    test("0 is not a power of 2", () => {
+        assert.equal(isPowerOfTwo(0), false);
+    });
+
+    test("3 is not a power of 2", () => {
+        assert.equal(isPowerOfTwo(3), false);
+    });
+
+    test("5 is not a power of 2", () => {
+        assert.equal(isPowerOfTwo(5), false);
+    });
+
+    test("7 is not a power of 2", () => {
+        assert.equal(isPowerOfTwo(7), false);
+    });
+});
+
+describe("beat unit validation — parseHeaderLine rejects invalid denominators", () => {
+
+    test("time 4/7 emits a warning about invalid beat unit", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "time 4/7");
+
+        assert.ok(result.warnings && result.warnings.length > 0, "expected a warning");
+        assert.ok(
+            result.warnings?.some(w => w.includes("7")),
+            `expected warning mentioning the invalid unit '7', got: ${JSON.stringify(result.warnings)}`
+        );
+    });
+
+    test("time 4/3 emits a warning about invalid beat unit", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "time 4/3");
+
+        assert.ok(result.warnings && result.warnings.length > 0, "expected a warning");
+        assert.ok(
+            result.warnings?.some(w => w.includes("3")),
+            `expected warning mentioning the invalid unit '3', got: ${JSON.stringify(result.warnings)}`
+        );
+    });
+
+    test("time 4/5 emits a warning about invalid beat unit", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "time 4/5");
+
+        assert.ok(result.warnings && result.warnings.length > 0, "expected a warning");
+    });
+
+    test("time 4/0 emits a warning about invalid beat unit", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "time 4/0");
+
+        assert.ok(result.warnings && result.warnings.length > 0, "expected a warning");
+    });
+
+    test("time 4/7 does not produce a timeSignature", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "time 4/7");
+
+        assert.equal(result.timeSignature, undefined);
+    });
+
+    test("time 4/3 does not produce a timeSignature", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "time 4/3");
+
+        assert.equal(result.timeSignature, undefined);
+    });
+
+    test("time 4/4 (valid) produces no warning", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "time 4/4");
+
+        assert.equal(result.warnings, undefined);
+        assert.equal(result.timeSignature?.beatUnit, 4);
+    });
+
+    test("time 3/4 (valid) produces no warning", () => {
+        const result = parseDrumNotation("HH |x-x-x-|", "time 3/4");
+
+        assert.equal(result.warnings, undefined);
+    });
+
+    test("time 6/8 (valid) produces no warning", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-x-x-|", "time 6/8");
+
+        assert.equal(result.warnings, undefined);
+    });
+
+    test("time 4/16 (valid) produces no warning", () => {
+        const result = parseDrumNotation("HH |x-x-x-x-|", "time 4/16");
+
+        assert.equal(result.warnings, undefined);
+        assert.equal(result.timeSignature?.beatUnit, 16);
+    });
+
+    test("time 2/1 (valid) produces no warning", () => {
+        const result = parseDrumNotation("HH |x-x-|", "time 2/1");
+
+        assert.equal(result.warnings, undefined);
+        assert.equal(result.timeSignature?.beatUnit, 1);
+    });
+
+    test("invalid beat unit in body-level directive also emits a warning", () => {
+        const source = [
+            "time 4/7",
+            "HH |x-x-x-x-|",
+        ].join("\n");
+        const result = parseDrumNotation(source);
+
+        assert.ok(result.warnings && result.warnings.length > 0, "expected a warning");
+        assert.ok(result.warnings?.some(w => w.includes("7")));
+    });
+});
+
+describe("beat unit validation — buildTimeSignature with validate flag", () => {
+
+    test("buildTimeSignature with valid unit and validate=true succeeds", () => {
+        assert.doesNotThrow(() => buildTimeSignature(4, 4, true));
+        assert.doesNotThrow(() => buildTimeSignature(6, 8, true));
+        assert.doesNotThrow(() => buildTimeSignature(4, 16, true));
+        assert.doesNotThrow(() => buildTimeSignature(2, 1, true));
+    });
+
+    test("buildTimeSignature with beatUnit 3 and validate=true throws", () => {
+        assert.throws(
+            () => buildTimeSignature(4, 3, true),
+            /invalid beat unit/i
+        );
+    });
+
+    test("buildTimeSignature with beatUnit 5 and validate=true throws", () => {
+        assert.throws(
+            () => buildTimeSignature(4, 5, true),
+            /invalid beat unit/i
+        );
+    });
+
+    test("buildTimeSignature with beatUnit 7 and validate=true throws", () => {
+        assert.throws(
+            () => buildTimeSignature(4, 7, true),
+            /invalid beat unit/i
+        );
+    });
+
+    test("buildTimeSignature with beatUnit 0 and validate=true throws", () => {
+        assert.throws(
+            () => buildTimeSignature(4, 0, true),
+            /invalid beat unit/i
+        );
+    });
+
+    test("buildTimeSignature with invalid unit and validate=false (default) does not throw", () => {
+        assert.doesNotThrow(() => buildTimeSignature(4, 7));
+        assert.doesNotThrow(() => buildTimeSignature(4, 7, false));
     });
 });
 
