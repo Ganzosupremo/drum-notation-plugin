@@ -14,6 +14,8 @@ import { renderTomNote } from "./notes/renderTomNote";
 
 import { renderFallbackNote } from "./notes/renderFallbackNote";
 
+import { renderHiHatFootNote } from "./notes/renderHiHatFootNote";
+
 export function renderNotes(
     svg: SVGSVGElement,
     notes: NoteEvent[],
@@ -23,6 +25,9 @@ export function renderNotes(
         switch (note.instrument) {
             case "HH":
                 renderHiHatNote(svg, note.x, y, note.articulation);
+                break;
+            case "HF":
+                renderHiHatFootNote(svg, note.x, y);
                 break;
             case "SD":
                 renderSnareNote(svg, note.x, y);

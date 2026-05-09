@@ -91,3 +91,8 @@
     stroke-width: 1.5;
     fill: none;
 }
+
+.drum-note-hf {
+    stroke: #cccccc;
+    stroke-width: 2;
+}
