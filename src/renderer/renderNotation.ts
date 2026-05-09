@@ -3,7 +3,8 @@ import { DrumNotation, TimeSignature } from "types";
 import {
     ROW_HEIGHT,
     TOP_OFFSET,
-    SVG_WIDTH,
+    START_X,
+    CELL_WIDTH,
 } from "./constants";
 
 import { createSVGElement } from "./svgHelper";
@@ -44,19 +45,25 @@ export function renderDrumNotation(
         wrapper.appendChild(warningEl);
     }
 
-    const svg = createSVGElement("svg");
-
-    svg.setAttribute("width", SVG_WIDTH.toString());
-
-    svg.setAttribute("height", height.toString());
-
-    svg.classList.add("drum-svg");
-
-    // Build all layouts up front so cellCount is available for subdivision labels
+    // Build all layouts up front so cellCount is available for width calculation
+    // and subdivision labels before the per-row render loop runs.
     const layouts = notation.lines.map((line) => ({
         line,
         ...buildLayout(line.instrument, line.pattern),
     }));
+
+    const maxCellCount = layouts.reduce((m, l) => Math.max(m, l.cellCount), 0);
+    // Add one cell of right-side padding so the last notehead is not flush with
+    // the SVG edge.  Enforce a reasonable minimum width for very short patterns.
+    const svgWidth = Math.max(400, START_X + (maxCellCount + 1) * CELL_WIDTH);
+
+    const svg = createSVGElement("svg");
+
+    svg.setAttribute("width", svgWidth.toString());
+
+    svg.setAttribute("height", height.toString());
+
+    svg.classList.add("drum-svg");
 
     const firstLayout = layouts[0];
 

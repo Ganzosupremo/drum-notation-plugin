@@ -30,10 +30,10 @@ export function renderNotes(
                 renderHiHatFootNote(svg, note.x, y);
                 break;
             case "SD":
-                renderSnareNote(svg, note.x, y);
+                renderSnareNote(svg, note.x, y, note.articulation);
                 break;
             case "BD":
-                renderKickNote(svg, note.x, y);
+                renderKickNote(svg, note.x, y, note.articulation);
                 break;
             case "RC":
                 renderRideNote(svg, note.x, y);
