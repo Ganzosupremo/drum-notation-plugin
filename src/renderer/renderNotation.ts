@@ -73,7 +73,7 @@ export function renderDrumNotation(
 
         renderNotes(svg, notes, y);
 
-        renderBarLines(svg, y, line.pattern.length);
+        renderBarLines(svg, y, line.pattern.length, beatsPerBar);
 
         // RENDER BEAMS
         if (line.instrument === "HH") {

@@ -8,10 +8,12 @@ import {
 export function renderBarLines(
     svg: SVGSVGElement,
     y: number,
-    length: number
+    length: number,
+    beatsPerBar = 4
 ) {
+    const period = beatsPerBar > 0 ? Math.round(length / beatsPerBar) : 4;
     for (let i = 0; i < length; i++) {
-        if ((i + 1) % 4 !== 0) continue;
+        if (period <= 0 || (i + 1) % period !== 0) continue;
 
         const x = START_X + i * CELL_WIDTH;
 

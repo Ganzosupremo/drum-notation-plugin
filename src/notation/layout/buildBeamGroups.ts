@@ -16,12 +16,10 @@ export function buildBeamGroups(
         ? patternLength / beatsPerBar
         : 0;
 
-    const subdivisionsPerBeat = subdivisionsPerBeatOverride && subdivisionsPerBeatOverride > 0
-        ? subdivisionsPerBeatOverride
-        : (beatWidth > 0 ? Math.round(beatWidth) : 0);
-    const maxIndexGap = subdivisionsPerBeat > 0
-        ? Math.max(1, Math.floor(subdivisionsPerBeat / 2))
-        : 1;
+    const gridCellsPerBeat = beatWidth > 0 ? Math.round(beatWidth) : 0;
+    const maxIndexGap = gridCellsPerBeat > 0 && subdivisionsPerBeatOverride && subdivisionsPerBeatOverride > 0
+        ? Math.max(1, Math.round(gridCellsPerBeat / subdivisionsPerBeatOverride))
+        : (gridCellsPerBeat > 0 ? Math.max(1, Math.floor(gridCellsPerBeat / 2)) : 1);
 
     for (let i = 0; i < notes.length - 1; i++) {
 
