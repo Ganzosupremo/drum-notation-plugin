@@ -14,7 +14,7 @@
         "keywords": [],
         "license": "0-BSD",
         "devDependencies": {
-                "@types/node": "^20.11.30",
+                "@types/node": "^20.19.40",
                 "builtin-modules": "^3.3.0",
                 "esbuild": "^0.20.2",
                 "obsidian": "latest",
