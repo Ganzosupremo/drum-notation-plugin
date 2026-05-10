@@ -4,7 +4,7 @@ import {
     ROW_HEIGHT,
     TOP_OFFSET,
     START_X,
-    CELL_WIDTH,
+    getCellWidth,
 } from "./constants";
 
 import { createSVGElement } from "./svgHelper";
@@ -37,6 +37,9 @@ export function renderDrumNotation(
     const subdivisionsPerBeat = notation.subdivisionsPerBeat;
     const height = notation.lines.length * ROW_HEIGHT + 40;
 
+    // Compute adaptive cell width based on subdivision density
+    const cellWidth = getCellWidth(subdivisionsPerBeat ?? 0);
+
     const wrapper = document.createElement("div");
     wrapper.className = "drum-container";
 
@@ -49,11 +52,11 @@ export function renderDrumNotation(
 
     const layouts = notation.lines.map((line) => ({
         line,
-        ...buildLayout(line.instrument, line.pattern),
+        ...buildLayout(line.instrument, line.pattern, cellWidth),
     }));
 
     const maxCellCount = layouts.reduce((m, l) => Math.max(m, l.cellCount), 0);
-    const svgWidth = Math.max(400, START_X + (maxCellCount + 1) * CELL_WIDTH);
+    const svgWidth = Math.max(400, START_X + (maxCellCount + 1) * cellWidth);
 
     const svg = createSVGElement("svg");
     svg.setAttribute("width", svgWidth.toString());
@@ -66,7 +69,8 @@ export function renderDrumNotation(
         svg,
         firstLayout?.cellCount ?? 0,
         timeSignature,
-        subdivisionsPerBeat
+        subdivisionsPerBeat,
+        cellWidth
     );
 
     renderFeelIndicator(svg, notation.feel);
@@ -101,8 +105,8 @@ export function renderDrumNotation(
         const topY = firstY - 18;
         const bottomY = lastY + 12;
 
-        renderBarLines(svg, topY, bottomY, maxCellCount, beatsPerBar, subdivisionsPerBeat);
-        renderBracketLines(svg, topY, bottomY);
+        renderBarLines(svg, topY, bottomY, maxCellCount, beatsPerBar, subdivisionsPerBeat, cellWidth);
+        renderBracketLines(svg, topY, bottomY, maxCellCount, cellWidth);
     }
 
     wrapper.appendChild(svg);

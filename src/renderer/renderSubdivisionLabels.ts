@@ -12,6 +12,7 @@ export function renderSubdivisionLabels(
     length: number,
     timeSignature?: TimeSignature,
     subdivisionsOverride?: number,
+    cellWidth: number = CELL_WIDTH
 ) {
     const beatsPerBar = timeSignature?.beatsPerBar ?? 4;
 
@@ -65,7 +66,7 @@ export function renderSubdivisionLabels(
             ? (beatIndex + 1).toString()
             : rawLabel;
 
-        const x = START_X + i * CELL_WIDTH;
+        const x = START_X + i * cellWidth;
         const label = createSVGElement('text');
 
         label.setAttribute('x', x.toString());

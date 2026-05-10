@@ -18,7 +18,8 @@ const OPEN_ARTICULATION_INSTRUMENTS = new Set(["HH"]);
 
 export function buildLayout(
     instrument: string,
-    pattern: string
+    pattern: string,
+    cellWidth: number = CELL_WIDTH
 ): LayoutResult {
     const notes: NoteEvent[] = [];
     const str = pattern.replace(/\s+/g, "");
@@ -42,7 +43,7 @@ export function buildLayout(
                     symbol: sym,
                     articulation: "ghost",
                     index: cellIndex,
-                    x: START_X + cellIndex * CELL_WIDTH,
+                    x: START_X + cellIndex * cellWidth,
                 });
                 i = close + 1;
                 cellIndex++;
@@ -64,7 +65,7 @@ export function buildLayout(
                     symbol: nextChar,
                     articulation: accentArticulation,
                     index: cellIndex,
-                    x: START_X + cellIndex * CELL_WIDTH,
+                    x: START_X + cellIndex * cellWidth,
                 });
                 i += 2;
                 cellIndex++;
@@ -94,7 +95,7 @@ export function buildLayout(
                     symbol: ch,
                     articulation: accentArticulation,
                     index: cellIndex,
-                    x: START_X + cellIndex * CELL_WIDTH,
+                    x: START_X + cellIndex * cellWidth,
                 });
                 i += 2;
                 cellIndex++;
@@ -109,7 +110,7 @@ export function buildLayout(
             symbol: ch,
             articulation,
             index: cellIndex,
-            x: START_X + cellIndex * CELL_WIDTH,
+            x: START_X + cellIndex * cellWidth,
         });
         i++;
         cellIndex++;

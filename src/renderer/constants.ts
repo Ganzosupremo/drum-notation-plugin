@@ -15,8 +15,18 @@ export const INSTRUMENT_NAMES: Record<string, string> = {
 export const CYMBAL_INSTRUMENTS = new Set(["HH", "RC", "CC", "HF"]);
 export const TOM_INSTRUMENTS    = new Set(["HT", "MT", "FT"]);
 
-// Width of each cell in the grid
+// Default cell width (used as a fallback; prefer getCellWidth for adaptive sizing)
 export const CELL_WIDTH = 40;
+
+/**
+ * Returns an adaptive cell width based on subdivisions per beat.
+ * Narrower for denser subdivisions (16th notes), wider for sparser ones (quarter notes).
+ * Formula: clamp(80 / subdivisionsPerBeat, 24, 64)
+ */
+export function getCellWidth(subdivisionsPerBeat: number): number {
+    if (subdivisionsPerBeat <= 0) return CELL_WIDTH;
+    return Math.min(64, Math.max(24, Math.round(80 / subdivisionsPerBeat)));
+}
 
 // Height of each row in the grid
 export const ROW_HEIGHT = 40;

@@ -11,11 +11,15 @@ export function renderBarLines(
     bottomY: number,
     length: number,
     beatsPerBar = 4,
-    subdivisionsPerBeat?: number
+    subdivisionsPerBeat?: number,
+    cellWidth: number = CELL_WIDTH
 ) {
-    const period = subdivisionsPerBeat && subdivisionsPerBeat > 0
+    const subdiv = subdivisionsPerBeat && subdivisionsPerBeat > 0
         ? subdivisionsPerBeat
         : (beatsPerBar > 0 ? Math.round(length / beatsPerBar) : 4);
+
+    // One barline per full measure (not per beat)
+    const period = subdiv * beatsPerBar;
 
     const maxI = subdivisionsPerBeat && subdivisionsPerBeat > 0
         ? beatsPerBar * subdivisionsPerBeat
@@ -24,7 +28,7 @@ export function renderBarLines(
     for (let i = 0; i < Math.min(length, maxI); i++) {
         if (period <= 0 || (i + 1) % period !== 0) continue;
 
-        const x = START_X + i * CELL_WIDTH + CELL_WIDTH / 2;
+        const x = START_X + i * cellWidth + cellWidth / 2;
 
         const bar = createSVGElement("line");
         bar.setAttribute("x1", x.toString());
@@ -40,15 +44,30 @@ export function renderBracketLines(
     svg: SVGSVGElement,
     topY: number,
     bottomY: number,
+    cellCount?: number,
+    cellWidth: number = CELL_WIDTH
 ) {
-    // Only the opening bracket is drawn here. The closing bracket coincides
-    // with the last beat-boundary line already emitted by renderBarLines, so
-    // drawing it again would cause a double-stroke at that position.
-    const line = createSVGElement("line");
-    line.setAttribute("x1", START_X.toString());
-    line.setAttribute("y1", topY.toString());
-    line.setAttribute("x2", START_X.toString());
-    line.setAttribute("y2", bottomY.toString());
-    line.classList.add("drum-bar");
-    svg.appendChild(line);
+    // Opening bracket at the left edge
+    const open = createSVGElement("line");
+    open.setAttribute("x1", START_X.toString());
+    open.setAttribute("y1", topY.toString());
+    open.setAttribute("x2", START_X.toString());
+    open.setAttribute("y2", bottomY.toString());
+    open.classList.add("drum-bar");
+    svg.appendChild(open);
+
+    // Closing bracket at the right edge of the last cell.
+    // This must be drawn explicitly because barlines are now only emitted at
+    // measure boundaries (not every beat), so it no longer coincides with a
+    // beat barline when there is more than one measure.
+    if (cellCount && cellCount > 0) {
+        const closeX = START_X + (cellCount - 1) * cellWidth + cellWidth / 2;
+        const close = createSVGElement("line");
+        close.setAttribute("x1", closeX.toString());
+        close.setAttribute("y1", topY.toString());
+        close.setAttribute("x2", closeX.toString());
+        close.setAttribute("y2", bottomY.toString());
+        close.classList.add("drum-bar");
+        svg.appendChild(close);
+    }
 }
