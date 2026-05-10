@@ -43,7 +43,7 @@ export function buildLayout(
                     symbol: sym,
                     articulation: "ghost",
                     index: cellIndex,
-                    x: START_X + cellIndex * cellWidth,
+                    x: START_X + cellIndex * cellWidth + cellWidth / 2,
                 });
                 i = close + 1;
                 cellIndex++;
@@ -65,7 +65,7 @@ export function buildLayout(
                     symbol: nextChar,
                     articulation: accentArticulation,
                     index: cellIndex,
-                    x: START_X + cellIndex * cellWidth,
+                    x: START_X + cellIndex * cellWidth + cellWidth / 2,
                 });
                 i += 2;
                 cellIndex++;
@@ -95,7 +95,7 @@ export function buildLayout(
                     symbol: ch,
                     articulation: accentArticulation,
                     index: cellIndex,
-                    x: START_X + cellIndex * cellWidth,
+                    x: START_X + cellIndex * cellWidth + cellWidth / 2,
                 });
                 i += 2;
                 cellIndex++;
@@ -110,7 +110,7 @@ export function buildLayout(
             symbol: ch,
             articulation,
             index: cellIndex,
-            x: START_X + cellIndex * cellWidth,
+            x: START_X + cellIndex * cellWidth + cellWidth / 2,
         });
         i++;
         cellIndex++;

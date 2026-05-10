@@ -66,7 +66,7 @@ export function renderSubdivisionLabels(
             ? (beatIndex + 1).toString()
             : rawLabel;
 
-        const x = START_X + i * cellWidth;
+        const x = START_X + i * cellWidth + cellWidth / 2;
         const label = createSVGElement('text');
 
         label.setAttribute('x', x.toString());

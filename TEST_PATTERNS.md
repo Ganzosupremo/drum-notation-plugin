@@ -265,10 +265,10 @@ Render both blocks below and compare side by side to confirm glyph sizing.
 
 Sixteenth-note density (small cells):
 
-```drums time 4/4
-HH |x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-|
-SD |--------o---------------o-------|
-BD |o---------------o---------------|
+```drums time 4/4 subdiv 4
+HH |xxxxxxxxxxxxxxxx|
+SD |----o-------o---|
+BD |o-------o-------|
 ```
 
 Eighth-note density (larger cells):

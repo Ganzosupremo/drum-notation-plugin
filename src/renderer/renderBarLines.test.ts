@@ -59,11 +59,11 @@ describe("renderBarLines — single measure (4/4, 16th notes, 16 cells)", () => 
         assert.ok(lines[0]?.classList.has("drum-bar"), "barline should have drum-bar class");
     });
 
-    test("the barline x position is at the right edge of cell 16 (x = START_X + 15*cellWidth + cellWidth/2)", () => {
+    test("the barline x position is at the right edge of cell 16 (x = START_X + 16*cellWidth)", () => {
         const svg = makeSVG();
         renderBarLines(svg as any, 0, 100, 16, 4, 4, CELL_WIDTH);
         const lines = svg.children.filter(c => c.tagName === "line");
-        const expectedX = START_X + 15 * CELL_WIDTH + CELL_WIDTH / 2;
+        const expectedX = START_X + 16 * CELL_WIDTH;
         assert.equal(lines[0]?.getAttribute("x1"), expectedX.toString());
         assert.equal(lines[0]?.getAttribute("x2"), expectedX.toString());
     });
@@ -91,7 +91,7 @@ describe("renderBarLines — two measures (4/4, 16th notes, 32 cells)", () => {
         const svg = makeSVG();
         renderBarLines(svg as any, 0, 100, 32, 4, 4, CELL_WIDTH);
         const lines = svg.children.filter(c => c.tagName === "line");
-        const expectedX = START_X + 15 * CELL_WIDTH + CELL_WIDTH / 2;
+        const expectedX = START_X + 16 * CELL_WIDTH;
         assert.equal(lines[0]?.getAttribute("x1"), expectedX.toString(), "first barline should be at end of measure 1");
     });
 
@@ -99,7 +99,7 @@ describe("renderBarLines — two measures (4/4, 16th notes, 32 cells)", () => {
         const svg = makeSVG();
         renderBarLines(svg as any, 0, 100, 32, 4, 4, CELL_WIDTH);
         const lines = svg.children.filter(c => c.tagName === "line");
-        const expectedX = START_X + 31 * CELL_WIDTH + CELL_WIDTH / 2;
+        const expectedX = START_X + 32 * CELL_WIDTH;
         assert.equal(lines[1]?.getAttribute("x1"), expectedX.toString(), "second barline should be at end of measure 2");
     });
 
@@ -148,11 +148,11 @@ describe("renderBracketLines — with cellCount (16 cells)", () => {
         assert.equal(lines[0]?.getAttribute("x2"), START_X.toString(), "opening bracket x2 should be START_X");
     });
 
-    test("closing bracket is at START_X + (cellCount-1)*cellWidth + cellWidth/2", () => {
+    test("closing bracket is at START_X + cellCount*cellWidth", () => {
         const svg = makeSVG();
         renderBracketLines(svg as any, 0, 100, 16, CELL_WIDTH);
         const lines = svg.children.filter(c => c.tagName === "line");
-        const expectedCloseX = START_X + 15 * CELL_WIDTH + CELL_WIDTH / 2;
+        const expectedCloseX = START_X + 16 * CELL_WIDTH;
         assert.equal(lines[1]?.getAttribute("x1"), expectedCloseX.toString(), "closing bracket x1 should be at right edge");
         assert.equal(lines[1]?.getAttribute("x2"), expectedCloseX.toString(), "closing bracket x2 should be at right edge");
     });
@@ -212,11 +212,11 @@ describe("renderBracketLines — without cellCount", () => {
 
 describe("renderBracketLines — two-measure closing bracket x (32 cells)", () => {
 
-    test("closing bracket x for 32 cells is at START_X + 31*cellWidth + cellWidth/2", () => {
+    test("closing bracket x for 32 cells is at START_X + 32*cellWidth", () => {
         const svg = makeSVG();
         renderBracketLines(svg as any, 0, 100, 32, CELL_WIDTH);
         const lines = svg.children.filter(c => c.tagName === "line");
-        const expectedCloseX = START_X + 31 * CELL_WIDTH + CELL_WIDTH / 2;
+        const expectedCloseX = START_X + 32 * CELL_WIDTH;
         assert.equal(lines[1]?.getAttribute("x1"), expectedCloseX.toString());
     });
 

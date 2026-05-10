@@ -24,7 +24,7 @@ export function renderBarLines(
     for (let i = 0; i < length; i++) {
         if (period <= 0 || (i + 1) % period !== 0) continue;
 
-        const x = START_X + i * cellWidth + cellWidth / 2;
+        const x = START_X + (i + 1) * cellWidth;
 
         const bar = createSVGElement("line");
         bar.setAttribute("x1", x.toString());
@@ -57,7 +57,7 @@ export function renderBracketLines(
     // measure boundaries (not every beat), so it no longer coincides with a
     // beat barline when there is more than one measure.
     if (cellCount && cellCount > 0) {
-        const closeX = START_X + (cellCount - 1) * cellWidth + cellWidth / 2;
+        const closeX = START_X + cellCount * cellWidth;
         const close = createSVGElement("line");
         close.setAttribute("x1", closeX.toString());
         close.setAttribute("y1", topY.toString());
