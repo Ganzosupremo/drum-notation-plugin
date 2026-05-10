@@ -12,12 +12,6 @@ export function buildBeamGroups(
 
     if (notes.length < 2) return groups;
 
-    const beatWidth = patternLength > 0
-        ? patternLength / beatsPerBar
-        : 0;
-
-    if (beatWidth <= 0) return groups;
-
     // Determine subdivisions per beat
     let subdivisionsPerBeat: number;
 
@@ -33,6 +27,9 @@ export function buildBeamGroups(
         );
         subdivisionsPerBeat = Number.isFinite(rawSubdivisions) ? closest : 2;
     }
+
+    const beatWidth = subdivisionsPerBeat;
+    if (beatWidth <= 0) return groups;
 
     // subdiv 4 → two stacked beams; subdiv 2 or 3 → one beam
     const beamCount = subdivisionsPerBeat === 4 ? 2 : 1;
