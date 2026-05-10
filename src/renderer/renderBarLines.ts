@@ -21,11 +21,7 @@ export function renderBarLines(
     // One barline per full measure (not per beat)
     const period = subdiv * beatsPerBar;
 
-    const maxI = subdivisionsPerBeat && subdivisionsPerBeat > 0
-        ? beatsPerBar * subdivisionsPerBeat
-        : length;
-
-    for (let i = 0; i < Math.min(length, maxI); i++) {
+    for (let i = 0; i < length; i++) {
         if (period <= 0 || (i + 1) % period !== 0) continue;
 
         const x = START_X + i * cellWidth + cellWidth / 2;
