@@ -77,12 +77,12 @@ describe("renderRideNote — SMuFL glyph output", () => {
         assert.equal(glyph.getAttribute("x"), "75");
     });
 
-    test("glyph y is offset upward from baseline by 4px", () => {
+    test("glyph renders at the provided y coordinate (caller pre-computes staff position)", () => {
         const svg = makeSVG();
         renderRideNote(svg as any, 50, 100);
         const glyph = svg.children.find(c => c.tagName === "text" && c.classList.has("drum-glyph"));
         assert.ok(glyph);
-        assert.equal(glyph.getAttribute("y"), "96", "RIDE_Y_OFFSET is -4");
+        assert.equal(glyph.getAttribute("y"), "100", "ride note renders at the y passed to it");
     });
 
     test("total child count is glyph + stem (2 elements)", () => {

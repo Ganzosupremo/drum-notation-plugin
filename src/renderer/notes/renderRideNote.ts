@@ -4,23 +4,20 @@ import { GLYPHS } from "../smufl";
 
 import { renderStem } from "../renderStem";
 
-// Ride is drawn slightly above the row baseline to distinguish it from HH
-const RIDE_Y_OFFSET = -4;
-
+// The y passed to renderRideNote is the pre-computed staff position
+// (STAFF_MID_Y + STAFF_OFFSET["RC"]).  No internal offset is applied.
 export function renderRideNote(
     svg: SVGSVGElement,
     x: number,
     y: number,
     scale: number = 1
 ) {
-    const ny = y + RIDE_Y_OFFSET;
-
     const glyph = createSVGElement("text");
     glyph.setAttribute("x", x.toString());
-    glyph.setAttribute("y", ny.toString());
+    glyph.setAttribute("y", y.toString());
     glyph.classList.add("drum-glyph");
     glyph.textContent = GLYPHS.noteheadXBlack;
     svg.appendChild(glyph);
 
-    renderStem(svg, x, ny, scale);
+    renderStem(svg, x, y, scale);
 }

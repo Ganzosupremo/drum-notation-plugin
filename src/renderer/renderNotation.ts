@@ -1,16 +1,24 @@
 import { DrumNotation, TimeSignature } from "types";
 
 import {
-    ROW_HEIGHT,
-    TOP_OFFSET,
-    STEM_TOP,
+    STAFF_MID_Y,
+    STAFF_S,
+    STAFF_SVG_HEIGHT,
     START_X,
     getCellWidth,
 } from "./constants";
 
+import {
+    CANONICAL_ORDER,
+    STAFF_OFFSET,
+    STEM_UP,
+    BEAMED_INSTRUMENTS,
+    LEDGER_INSTRUMENTS,
+} from "./staffPositions";
+
 import { createSVGElement } from "./svgHelper";
 
-import { renderStaffLine } from "./renderStaffLine";
+import { renderStaff } from "./renderStaffLine";
 
 import { renderLabel } from "./renderLabel";
 
@@ -36,9 +44,7 @@ export function renderDrumNotation(
 ) {
     const beatsPerBar = timeSignature?.beatsPerBar ?? 4;
     const subdivisionsPerBeat = notation.subdivisionsPerBeat;
-    const height = TOP_OFFSET + notation.lines.length * ROW_HEIGHT + 20;
 
-    // Compute adaptive cell width based on subdivision density
     const cellWidth = getCellWidth(subdivisionsPerBeat ?? 0);
 
     const wrapper = document.createElement("div");
@@ -56,16 +62,25 @@ export function renderDrumNotation(
         ...buildLayout(line.instrument, line.pattern, cellWidth),
     }));
 
+    // Sort instruments into canonical staff order (CC top → HF bottom).
+    // Unknown instruments fall to the end.
+    layouts.sort((a, b) => {
+        const ai = CANONICAL_ORDER.indexOf(a.line.instrument);
+        const bi = CANONICAL_ORDER.indexOf(b.line.instrument);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+
     const maxCellCount = layouts.reduce((m, l) => Math.max(m, l.cellCount), 0);
     const svgWidth = Math.max(400, START_X + (maxCellCount + 1) * cellWidth);
 
     const svg = createSVGElement("svg");
     svg.setAttribute("width", svgWidth.toString());
-    svg.setAttribute("height", height.toString());
+    svg.setAttribute("height", STAFF_SVG_HEIGHT.toString());
     svg.classList.add("drum-svg");
 
     const firstLayout = layouts[0];
 
+    // Subdivision labels (beat numbers: 1 e & a …) — at y≈20, above the staff.
     renderSubdivisionLabels(
         svg,
         firstLayout?.cellCount ?? 0,
@@ -74,51 +89,52 @@ export function renderDrumNotation(
         cellWidth
     );
 
+    // Feel indicator (Swing / Triplet) — also at y≈20.
     renderFeelIndicator(svg, notation.feel);
 
-    const rowYs: number[] = [];
+    // Full-width ledger lines for instruments outside the 5-line staff (CC, HF).
+    const ledgerYs = layouts
+        .filter(l => LEDGER_INSTRUMENTS.has(l.line.instrument))
+        .map(l => STAFF_MID_Y + (STAFF_OFFSET[l.line.instrument] ?? 0));
 
-    // Pass 1: labels, staff lines, stems, and noteheads (no accents yet)
-    layouts.forEach(({ line, notes }, rowIndex) => {
-        const y = rowIndex * ROW_HEIGHT + TOP_OFFSET;
-        rowYs.push(y);
+    // Draw the 5-line staff + any ledger lines.
+    renderStaff(svg, svgWidth, ledgerYs);
 
+    // Bar lines and bracket span the 5 staff lines (line 5 → line 1).
+    const staffTop    = STAFF_MID_Y - 2 * STAFF_S;
+    const staffBottom = STAFF_MID_Y + 2 * STAFF_S;
+
+    // Pass 1: instrument labels, noteheads, stems (accents deferred).
+    layouts.forEach(({ line, notes }) => {
+        const y = STAFF_MID_Y + (STAFF_OFFSET[line.instrument] ?? 0);
         renderLabel(svg, line.instrument, y);
-        renderStaffLine(svg, y, svgWidth);
         renderNotes(svg, notes, y, scale, { skipAccents: true });
     });
 
-    // Pass 2: beams (rendered after noteheads, before accents)
-    layouts.forEach(({ line, notes, cellCount }, rowIndex) => {
-        const y = rowIndex * ROW_HEIGHT + TOP_OFFSET;
-
-        if (line.instrument === "HH" || line.instrument === "RC" || line.instrument === "CC") {
-            const groups = buildBeamGroups(
-                notes,
-                y,
-                cellCount,
-                beatsPerBar,
-                subdivisionsPerBeat
-            );
-            renderBeams(svg, groups, scale);
-        }
+    // Pass 2: beams (rendered after noteheads, before accents).
+    layouts.forEach(({ line, notes, cellCount }) => {
+        if (!BEAMED_INSTRUMENTS.has(line.instrument)) return;
+        const y = STAFF_MID_Y + (STAFF_OFFSET[line.instrument] ?? 0);
+        const stemUp = STEM_UP[line.instrument] ?? true;
+        const groups = buildBeamGroups(
+            notes,
+            y,
+            cellCount,
+            beatsPerBar,
+            subdivisionsPerBeat,
+            stemUp
+        );
+        renderBeams(svg, groups, scale);
     });
 
-    // Pass 3: accents and open-circle markers (on top of beams)
-    layouts.forEach(({ notes }, rowIndex) => {
-        const y = rowIndex * ROW_HEIGHT + TOP_OFFSET;
+    // Pass 3: accents and open-circle markers (on top of beams).
+    layouts.forEach(({ line, notes }) => {
+        const y = STAFF_MID_Y + (STAFF_OFFSET[line.instrument] ?? 0);
         renderNotes(svg, notes, y, scale, { accentsOnly: true });
     });
 
-    if (rowYs.length > 0) {
-        const firstY = rowYs[0] as number;
-        const lastY = rowYs[rowYs.length - 1] as number;
-        const topY = firstY - (STEM_TOP + 20);
-        const bottomY = lastY + 12;
-
-        renderBarLines(svg, topY, bottomY, maxCellCount, beatsPerBar, subdivisionsPerBeat, cellWidth);
-        renderBracketLines(svg, topY, bottomY, maxCellCount, cellWidth);
-    }
+    renderBarLines(svg, staffTop, staffBottom, maxCellCount, beatsPerBar, subdivisionsPerBeat, cellWidth);
+    renderBracketLines(svg, staffTop, staffBottom, maxCellCount, cellWidth);
 
     wrapper.appendChild(svg);
     container.appendChild(wrapper);

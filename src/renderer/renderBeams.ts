@@ -11,13 +11,18 @@ export function renderBeams(
 ) {
     groups.forEach(group => {
         const count = group.beamCount ?? 1;
+        const up = group.stemUp !== false;
 
         for (let b = 0; b < count; b++) {
             const beam = createSVGElement("line");
 
-            // Primary beam anchors at the stem top.
-            // Additional beams stack 4 * scale px below (toward noteheads).
-            const yPos = group.y - STEM_TOP * scale + b * 4 * scale;
+            // Stems up: primary beam anchors at stem top (above noteheads);
+            //   additional beams stack downward (toward noteheads), +4px each.
+            // Stems down: primary beam anchors at stem bottom (below noteheads);
+            //   additional beams stack upward (toward noteheads), -4px each.
+            const yPos = up
+                ? group.y - STEM_TOP * scale + b * 4 * scale
+                : group.y + STEM_TOP * scale - b * 4 * scale;
 
             beam.setAttribute("x1", group.startX.toString());
             beam.setAttribute("y1", yPos.toString());

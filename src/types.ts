@@ -45,4 +45,7 @@ export interface BeamGroup {
     y: number;
 
     beamCount: number;
+
+    // true (default) = beams above noteheads (stems up); false = beams below (stems down).
+    stemUp?: boolean;
 }

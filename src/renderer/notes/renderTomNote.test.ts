@@ -27,6 +27,8 @@ function makeSVG(): MockSVGElement {
 type RenderTomNote = typeof import("./renderTomNote").renderTomNote;
 let renderTomNote: RenderTomNote;
 let GLYPHS: typeof import("../smufl").GLYPHS;
+let STEM_BOTTOM: number;
+let STEM_TOP: number;
 
 before(async () => {
     (globalThis as any).document = {
@@ -36,6 +38,9 @@ before(async () => {
     renderTomNote = mod.renderTomNote;
     const smufl = await import("../smufl");
     GLYPHS = smufl.GLYPHS;
+    const constants = await import("../constants");
+    STEM_BOTTOM = constants.STEM_BOTTOM;
+    STEM_TOP = constants.STEM_TOP;
 });
 
 describe("renderTomNote — SMuFL glyph output", () => {
@@ -78,37 +83,92 @@ describe("renderTomNote — SMuFL glyph output", () => {
     });
 });
 
-describe("renderTomNote — y offset per instrument", () => {
+describe("renderTomNote — renders at provided y (no internal offset)", () => {
 
-    test("MT applies zero y offset", () => {
+    // The y passed to renderTomNote is the pre-computed staff position.
+    // All toms render their notehead at exactly the y provided; the caller
+    // (renderNotation) is responsible for computing the correct staff y.
+
+    test("MT renders notehead at the provided y", () => {
         const svg = makeSVG();
         renderTomNote(svg as any, "MT", 50, 100);
         const glyph = svg.children.find(c => c.tagName === "text" && c.classList.has("drum-glyph"));
         assert.ok(glyph);
-        assert.equal(glyph.getAttribute("y"), "100", "MT y offset is 0");
+        assert.equal(glyph.getAttribute("y"), "100");
     });
 
-    test("HT applies -4 y offset", () => {
+    test("HT renders notehead at the provided y", () => {
         const svg = makeSVG();
         renderTomNote(svg as any, "HT", 50, 100);
         const glyph = svg.children.find(c => c.tagName === "text" && c.classList.has("drum-glyph"));
         assert.ok(glyph);
-        assert.equal(glyph.getAttribute("y"), "96", "HT y offset is -4");
+        assert.equal(glyph.getAttribute("y"), "100");
     });
 
-    test("FT applies +4 y offset", () => {
+    test("FT renders notehead at the provided y", () => {
         const svg = makeSVG();
         renderTomNote(svg as any, "FT", 50, 100);
         const glyph = svg.children.find(c => c.tagName === "text" && c.classList.has("drum-glyph"));
         assert.ok(glyph);
-        assert.equal(glyph.getAttribute("y"), "104", "FT y offset is +4");
+        assert.equal(glyph.getAttribute("y"), "100");
     });
 
-    test("unknown instrument defaults to zero y offset", () => {
+    test("unknown instrument renders notehead at the provided y", () => {
         const svg = makeSVG();
         renderTomNote(svg as any, "UNKNOWN", 50, 100);
         const glyph = svg.children.find(c => c.tagName === "text" && c.classList.has("drum-glyph"));
         assert.ok(glyph);
-        assert.equal(glyph.getAttribute("y"), "100", "unknown instrument should default y offset to 0");
+        assert.equal(glyph.getAttribute("y"), "100");
+    });
+});
+
+describe("renderTomNote — stem direction", () => {
+
+    test("HT stem goes upward (y2 < y1)", () => {
+        const svg = makeSVG();
+        renderTomNote(svg as any, "HT", 50, 100);
+        const stem = svg.children.find(c => c.tagName === "line");
+        assert.ok(stem);
+        const y1 = parseFloat(stem.getAttribute("y1")!);
+        const y2 = parseFloat(stem.getAttribute("y2")!);
+        assert.ok(y2 < y1, `HT stem should go up: y2 (${y2}) < y1 (${y1})`);
+    });
+
+    test("MT stem goes upward (y2 < y1)", () => {
+        const svg = makeSVG();
+        renderTomNote(svg as any, "MT", 50, 100);
+        const stem = svg.children.find(c => c.tagName === "line");
+        assert.ok(stem);
+        const y1 = parseFloat(stem.getAttribute("y1")!);
+        const y2 = parseFloat(stem.getAttribute("y2")!);
+        assert.ok(y2 < y1, `MT stem should go up: y2 (${y2}) < y1 (${y1})`);
+    });
+
+    test("FT stem goes downward (y2 > y1)", () => {
+        const svg = makeSVG();
+        renderTomNote(svg as any, "FT", 50, 100);
+        const stem = svg.children.find(c => c.tagName === "line");
+        assert.ok(stem);
+        const y1 = parseFloat(stem.getAttribute("y1")!);
+        const y2 = parseFloat(stem.getAttribute("y2")!);
+        assert.ok(y2 > y1, `FT stem should go down: y2 (${y2}) > y1 (${y1})`);
+    });
+
+    test("HT stem tip is y − STEM_TOP at scale=1", () => {
+        const svg = makeSVG();
+        renderTomNote(svg as any, "HT", 50, 100);
+        const stem = svg.children.find(c => c.tagName === "line");
+        assert.ok(stem);
+        const expected = (100 - STEM_TOP).toString();
+        assert.equal(stem.getAttribute("y2"), expected);
+    });
+
+    test("FT stem tip is y + STEM_TOP at scale=1", () => {
+        const svg = makeSVG();
+        renderTomNote(svg as any, "FT", 50, 100);
+        const stem = svg.children.find(c => c.tagName === "line");
+        assert.ok(stem);
+        const expected = (100 + STEM_TOP).toString();
+        assert.equal(stem.getAttribute("y2"), expected);
     });
 });

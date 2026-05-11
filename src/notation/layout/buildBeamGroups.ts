@@ -5,7 +5,8 @@ export function buildBeamGroups(
     y: number,
     patternLength: number,
     beatsPerBar = 4,
-    subdivisionsPerBeatOverride?: number
+    subdivisionsPerBeatOverride?: number,
+    stemUp: boolean = true
 ): BeamGroup[] {
 
     const groups: BeamGroup[] = [];
@@ -56,6 +57,7 @@ export function buildBeamGroups(
             endX: last.x,
             y,
             beamCount,
+            stemUp,
         });
     }
 

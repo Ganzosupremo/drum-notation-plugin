@@ -4,12 +4,12 @@ import { GLYPHS } from "../smufl";
 
 import { renderStem } from "../renderStem";
 
-const TOM_Y_OFFSET: Record<string, number> = {
-    HT: -4,
-    MT: 0,
-    FT: 4,
-};
-
+// The y passed to renderTomNote is the pre-computed staff position
+// (STAFF_MID_Y + STAFF_OFFSET[instrument]).  No internal offset is applied.
+//
+// Stem direction follows standard drum notation:
+//   HT, MT (on/above middle line) → stems up
+//   FT     (below middle line)    → stems down
 export function renderTomNote(
     svg: SVGSVGElement,
     instrument: string,
@@ -17,15 +17,13 @@ export function renderTomNote(
     y: number,
     scale: number = 1
 ) {
-    const offset = TOM_Y_OFFSET[instrument] ?? 0;
-    const cy = y + offset;
-
     const glyph = createSVGElement("text");
     glyph.setAttribute("x", x.toString());
-    glyph.setAttribute("y", cy.toString());
+    glyph.setAttribute("y", y.toString());
     glyph.classList.add("drum-glyph");
     glyph.textContent = GLYPHS.noteheadBlack;
     svg.appendChild(glyph);
 
-    renderStem(svg, x, cy, scale);
+    const stemUp = instrument !== "FT";
+    renderStem(svg, x, y, scale, stemUp);
 }

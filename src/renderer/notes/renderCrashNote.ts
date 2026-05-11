@@ -4,26 +4,23 @@ import { GLYPHS } from "../smufl";
 
 import { renderStem } from "../renderStem";
 
-// Crash is drawn above the row baseline, higher than ride, for visual distinction
-const CRASH_Y_OFFSET = -8;
-
+// The y passed to renderCrashNote is the pre-computed staff position
+// (STAFF_MID_Y + STAFF_OFFSET["CC"]).  No internal offset is applied.
 export function renderCrashNote(
     svg: SVGSVGElement,
     x: number,
     y: number,
     scale: number = 1
 ) {
-    const ny = y + CRASH_Y_OFFSET;
-
     // noteheadCircleX (U+E0B3) is the SMuFL glyph for a circled X —
     // the standard crash cymbal notehead in drum notation.
     const glyph = createSVGElement("text");
     glyph.setAttribute("x", x.toString());
-    glyph.setAttribute("y", ny.toString());
+    glyph.setAttribute("y", y.toString());
     glyph.classList.add("drum-glyph");
     glyph.classList.add("drum-glyph-circle-x");
     glyph.textContent = GLYPHS.noteheadCircleX;
     svg.appendChild(glyph);
 
-    renderStem(svg, x, ny, scale);
+    renderStem(svg, x, y, scale);
 }

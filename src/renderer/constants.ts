@@ -34,6 +34,20 @@ export const ROW_HEIGHT = 32;
 // X position for the first cell in the grid
 export const START_X = 120;
 
+// --- Single 5-line drum staff geometry ---
+
+// Distance between adjacent staff lines (px).
+export const STAFF_S = 10;
+
+// Y coordinate of the middle (3rd) staff line from SVG top.
+// Chosen to leave room above CC's stem for subdivision labels and
+// below HF's stem for padding.
+export const STAFF_MID_Y = 95;
+
+// Fixed SVG height for the single-staff layout.
+// Derived: STAFF_MID_Y + 3*STAFF_S (HF offset) + STEM_TOP (27) + padding (18) ≈ 170
+export const STAFF_SVG_HEIGHT = 170;
+
 // Y position for the first row
 export const START_Y = 70;
 

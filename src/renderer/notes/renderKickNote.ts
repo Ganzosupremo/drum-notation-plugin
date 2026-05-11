@@ -10,6 +10,9 @@ import { renderAccentMark, renderGhostParens } from "../renderArticulationHelper
 
 import { RenderNoteOpts } from "./renderHiHatNote";
 
+// Kick drum stems go down (below the notehead).
+const KICK_STEM_UP = false;
+
 export function renderKickNote(
     svg: SVGSVGElement,
     x: number,
@@ -45,7 +48,7 @@ export function renderKickNote(
         glyph.textContent = GLYPHS.noteheadBlack;
         svg.appendChild(glyph);
 
-        renderStem(svg, x, y, scale);
+        renderStem(svg, x, y, scale, KICK_STEM_UP);
     }
 
     if (!skipAccents && articulation === "accent") {
