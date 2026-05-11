@@ -2,6 +2,17 @@ import { createSVGElement } from "./svgHelper";
 
 import { GLYPHS } from "./smufl";
 
+export function renderOpenCircle(svg: SVGSVGElement, x: number, y: number, scale: number = 1) {
+    const circle = createSVGElement("circle");
+    circle.setAttribute("cx", x.toString());
+    circle.setAttribute("cy", (y - 42 * scale).toString());
+    circle.setAttribute("r", (4 * scale).toString());
+    circle.setAttribute("fill", "none");
+    circle.setAttribute("stroke", "#111");
+    circle.setAttribute("stroke-width", "1.5");
+    svg.appendChild(circle);
+}
+
 export function renderAccentMark(svg: SVGSVGElement, x: number, y: number, tipYOverride?: number, scale: number = 1) {
     // articAccentAbove (U+E4A0) sits entirely above its text baseline.
     // Default: baseline at stem top (y - 35*scale) with a 2px gap → y - 37*scale.

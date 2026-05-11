@@ -77,15 +77,19 @@ export function renderDrumNotation(
 
     const rowYs: number[] = [];
 
-    layouts.forEach(({ line, notes, cellCount }, rowIndex) => {
+    // Pass 1: labels, staff lines, stems, and noteheads (no accents yet)
+    layouts.forEach(({ line, notes }, rowIndex) => {
         const y = rowIndex * ROW_HEIGHT + TOP_OFFSET;
         rowYs.push(y);
 
         renderLabel(svg, line.instrument, y);
-
         renderStaffLine(svg, y, svgWidth);
+        renderNotes(svg, notes, y, scale, { skipAccents: true });
+    });
 
-        renderNotes(svg, notes, y, scale);
+    // Pass 2: beams (rendered after noteheads, before accents)
+    layouts.forEach(({ line, notes, cellCount }, rowIndex) => {
+        const y = rowIndex * ROW_HEIGHT + TOP_OFFSET;
 
         if (line.instrument === "HH" || line.instrument === "RC" || line.instrument === "CC") {
             const groups = buildBeamGroups(
@@ -97,6 +101,12 @@ export function renderDrumNotation(
             );
             renderBeams(svg, groups, scale);
         }
+    });
+
+    // Pass 3: accents and open-circle markers (on top of beams)
+    layouts.forEach(({ notes }, rowIndex) => {
+        const y = rowIndex * ROW_HEIGHT + TOP_OFFSET;
+        renderNotes(svg, notes, y, scale, { accentsOnly: true });
     });
 
     if (rowYs.length > 0) {

@@ -2,7 +2,7 @@ import { NoteEvent } from "types";
 
 import { renderKickNote } from "./notes/renderKickNote";
 
-import { renderHiHatNote } from "./notes/renderHiHatNote";
+import { renderHiHatNote, RenderNoteOpts } from "./notes/renderHiHatNote";
 
 import { renderSnareNote } from "./notes/renderSnareNote";
 
@@ -20,35 +20,36 @@ export function renderNotes(
     svg: SVGSVGElement,
     notes: NoteEvent[],
     y: number,
-    scale: number = 1
+    scale: number = 1,
+    opts: RenderNoteOpts = {}
 ) {
     notes.forEach((note) => {
         switch (note.instrument) {
             case "HH":
-                renderHiHatNote(svg, note.x, y, note.articulation, scale);
+                renderHiHatNote(svg, note.x, y, note.articulation, scale, opts);
                 break;
             case "HF":
-                renderHiHatFootNote(svg, note.x, y);
+                if (!opts.accentsOnly) renderHiHatFootNote(svg, note.x, y);
                 break;
             case "SD":
-                renderSnareNote(svg, note.x, y, note.articulation, scale);
+                renderSnareNote(svg, note.x, y, note.articulation, scale, opts);
                 break;
             case "BD":
-                renderKickNote(svg, note.x, y, note.articulation, scale);
+                renderKickNote(svg, note.x, y, note.articulation, scale, opts);
                 break;
             case "RC":
-                renderRideNote(svg, note.x, y, scale);
+                if (!opts.accentsOnly) renderRideNote(svg, note.x, y, scale);
                 break;
             case "CC":
-                renderCrashNote(svg, note.x, y, scale);
+                if (!opts.accentsOnly) renderCrashNote(svg, note.x, y, scale);
                 break;
             case "HT":
             case "MT":
             case "FT":
-                renderTomNote(svg, note.instrument, note.x, y, scale);
+                if (!opts.accentsOnly) renderTomNote(svg, note.instrument, note.x, y, scale);
                 break;
             default:
-                renderFallbackNote(svg, note.x, y);
+                if (!opts.accentsOnly) renderFallbackNote(svg, note.x, y);
                 break;
         }
     });

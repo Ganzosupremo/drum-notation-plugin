@@ -6,43 +6,58 @@ import { GLYPHS } from "../smufl";
 
 import { renderStem } from "../renderStem";
 
-import { renderAccentMark, renderGhostParens } from "../renderArticulationHelpers";
+import { renderAccentMark, renderGhostParens, renderOpenCircle } from "../renderArticulationHelpers";
+
+export interface RenderNoteOpts {
+    skipAccents?: boolean;
+    accentsOnly?: boolean;
+}
 
 export function renderHiHatNote(
     svg: SVGSVGElement,
     x: number,
     y: number,
     articulation: Articulation = "normal",
-    scale: number = 1
+    scale: number = 1,
+    opts: RenderNoteOpts = {}
 ) {
-    // Open HH: noteheadHalf (U+E0A3) — open oval notehead, the standard
-    // SMuFL glyph for an open hi-hat in drum notation.
+    const { skipAccents = false, accentsOnly = false } = opts;
+
     if (articulation === "open") {
-        const glyph = createSVGElement("text");
-        glyph.setAttribute("x", x.toString());
-        glyph.setAttribute("y", y.toString());
-        glyph.classList.add("drum-glyph");
-        glyph.classList.add("drum-glyph-open-hh");
-        glyph.textContent = GLYPHS.noteheadHalf;
-        svg.appendChild(glyph);
-        renderStem(svg, x, y, scale);
+        if (!accentsOnly) {
+            const glyph = createSVGElement("text");
+            glyph.setAttribute("x", x.toString());
+            glyph.setAttribute("y", y.toString());
+            glyph.classList.add("drum-glyph");
+            glyph.textContent = GLYPHS.noteheadXBlack;
+            svg.appendChild(glyph);
+            renderStem(svg, x, y, scale);
+        }
+        if (!skipAccents) {
+            renderOpenCircle(svg, x, y, scale);
+        }
         return;
     }
 
     if (articulation === "accent-open") {
-        const glyph = createSVGElement("text");
-        glyph.setAttribute("x", x.toString());
-        glyph.setAttribute("y", y.toString());
-        glyph.classList.add("drum-glyph");
-        glyph.classList.add("drum-glyph-open-hh");
-        glyph.textContent = GLYPHS.noteheadHalf;
-        svg.appendChild(glyph);
-        renderStem(svg, x, y, scale);
-        renderAccentMark(svg, x, y, undefined, scale);
+        if (!accentsOnly) {
+            const glyph = createSVGElement("text");
+            glyph.setAttribute("x", x.toString());
+            glyph.setAttribute("y", y.toString());
+            glyph.classList.add("drum-glyph");
+            glyph.textContent = GLYPHS.noteheadXBlack;
+            svg.appendChild(glyph);
+            renderStem(svg, x, y, scale);
+        }
+        if (!skipAccents) {
+            renderOpenCircle(svg, x, y, scale);
+            renderAccentMark(svg, x, y, y - 51 * scale, scale);
+        }
         return;
     }
 
     if (articulation === "ghost") {
+        if (accentsOnly) return;
         const g = createSVGElement("g");
         g.setAttribute("opacity", "0.45");
 
@@ -60,16 +75,17 @@ export function renderHiHatNote(
     }
 
     // Normal / accent: SMuFL X notehead (noteheadXBlack U+E0A9)
-    const glyph = createSVGElement("text");
-    glyph.setAttribute("x", x.toString());
-    glyph.setAttribute("y", y.toString());
-    glyph.classList.add("drum-glyph");
-    glyph.textContent = GLYPHS.noteheadXBlack;
-    svg.appendChild(glyph);
+    if (!accentsOnly) {
+        const glyph = createSVGElement("text");
+        glyph.setAttribute("x", x.toString());
+        glyph.setAttribute("y", y.toString());
+        glyph.classList.add("drum-glyph");
+        glyph.textContent = GLYPHS.noteheadXBlack;
+        svg.appendChild(glyph);
+        renderStem(svg, x, y, scale);
+    }
 
-    renderStem(svg, x, y, scale);
-
-    if (articulation === "accent") {
+    if (!skipAccents && articulation === "accent") {
         renderAccentMark(svg, x, y, undefined, scale);
     }
 }

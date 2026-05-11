@@ -8,14 +8,20 @@ import { renderStem } from "../renderStem";
 
 import { renderAccentMark, renderGhostParens } from "../renderArticulationHelpers";
 
+import { RenderNoteOpts } from "./renderHiHatNote";
+
 export function renderSnareNote(
     svg: SVGSVGElement,
     x: number,
     y: number,
     articulation: Articulation = "normal",
-    scale: number = 1
+    scale: number = 1,
+    opts: RenderNoteOpts = {}
 ) {
+    const { skipAccents = false, accentsOnly = false } = opts;
+
     if (articulation === "ghost") {
+        if (accentsOnly) return;
         const g = createSVGElement("g");
         g.setAttribute("opacity", "0.45");
 
@@ -31,16 +37,18 @@ export function renderSnareNote(
         return;
     }
 
-    const glyph = createSVGElement("text");
-    glyph.setAttribute("x", x.toString());
-    glyph.setAttribute("y", y.toString());
-    glyph.classList.add("drum-glyph");
-    glyph.textContent = GLYPHS.noteheadBlack;
-    svg.appendChild(glyph);
+    if (!accentsOnly) {
+        const glyph = createSVGElement("text");
+        glyph.setAttribute("x", x.toString());
+        glyph.setAttribute("y", y.toString());
+        glyph.classList.add("drum-glyph");
+        glyph.textContent = GLYPHS.noteheadBlack;
+        svg.appendChild(glyph);
 
-    renderStem(svg, x, y, scale);
+        renderStem(svg, x, y, scale);
+    }
 
-    if (articulation === "accent") {
+    if (!skipAccents && articulation === "accent") {
         renderAccentMark(svg, x, y, undefined, scale);
     }
 }
