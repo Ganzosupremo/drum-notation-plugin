@@ -9,7 +9,7 @@
                 "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
                 "version": "node version-bump.mjs && git add manifest.json versions.json",
                 "lint": "eslint .",
-                "test": "node --import tsx/esm --test src/parser.test.ts src/renderer/renderBarLines.test.ts src/renderer/notes/renderHiHatNote.test.ts src/renderer/notes/renderSnareNote.test.ts src/renderer/notes/renderKickNote.test.ts src/renderer/notes/renderTomNote.test.ts src/renderer/notes/renderRideNote.test.ts src/renderer/notes/renderCrashNote.test.ts src/renderer/notes/renderHiHatFootNote.test.ts src/renderer/notes/renderFallbackNote.test.ts"
+                "test": "node --import tsx/esm --test src/parser.test.ts src/renderer/renderBarLines.test.ts src/renderer/renderArticulationHelpers.test.ts src/renderer/renderBeams.test.ts src/renderer/notes/renderHiHatNote.test.ts src/renderer/notes/renderSnareNote.test.ts src/renderer/notes/renderKickNote.test.ts src/renderer/notes/renderTomNote.test.ts src/renderer/notes/renderRideNote.test.ts src/renderer/notes/renderCrashNote.test.ts src/renderer/notes/renderHiHatFootNote.test.ts src/renderer/notes/renderFallbackNote.test.ts"
         },
         "keywords": [],
         "license": "0-BSD",

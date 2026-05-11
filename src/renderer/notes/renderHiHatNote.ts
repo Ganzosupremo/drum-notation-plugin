@@ -8,6 +8,8 @@ import { renderStem } from "../renderStem";
 
 import { renderAccentMark, renderGhostParens, renderOpenCircle } from "../renderArticulationHelpers";
 
+import { STEM_TOP, OPEN_CIRCLE_ABOVE_STEM, OPEN_CIRCLE_RADIUS, ACCENT_OPEN_GAP } from "../constants";
+
 export interface RenderNoteOpts {
     skipAccents?: boolean;
     accentsOnly?: boolean;
@@ -51,9 +53,13 @@ export function renderHiHatNote(
         }
         if (!skipAccents) {
             renderOpenCircle(svg, x, y, scale);
-            // accent baseline above open circle:
-            // circle centre = y − 34*scale, circle top = y − 38*scale, gap = 5px
-            renderAccentMark(svg, x, y, y - 43 * scale, scale);
+            // Accent baseline = circle centre − radius − gap (all scaled):
+            //   circle centre: y − (STEM_TOP + OPEN_CIRCLE_ABOVE_STEM)
+            //   circle top:    − OPEN_CIRCLE_RADIUS
+            //   gap above:     − ACCENT_OPEN_GAP
+            renderAccentMark(svg, x, y,
+                y - (STEM_TOP + OPEN_CIRCLE_ABOVE_STEM + OPEN_CIRCLE_RADIUS + ACCENT_OPEN_GAP) * scale,
+                scale);
         }
         return;
     }

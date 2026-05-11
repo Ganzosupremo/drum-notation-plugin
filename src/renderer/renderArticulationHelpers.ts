@@ -2,10 +2,12 @@ import { createSVGElement } from "./svgHelper";
 
 import { GLYPHS } from "./smufl";
 
-import { STEM_TOP, OPEN_CIRCLE_ABOVE_STEM, ACCENT_ABOVE_STEM } from "./constants";
-
-// Radius of the open-HH circle marker (px at scale=1).
-const OPEN_CIRCLE_RADIUS = 4;
+import {
+    STEM_TOP,
+    OPEN_CIRCLE_ABOVE_STEM,
+    OPEN_CIRCLE_RADIUS,
+    ACCENT_ABOVE_STEM,
+} from "./constants";
 
 export function renderOpenCircle(svg: SVGSVGElement, x: number, y: number, scale: number = 1) {
     const circle = createSVGElement("circle");

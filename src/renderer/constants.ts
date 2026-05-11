@@ -64,3 +64,11 @@ export const OPEN_CIRCLE_ABOVE_STEM = 7;
 
 // Distance above the stem top at which a regular accent baseline is placed.
 export const ACCENT_ABOVE_STEM = 2;
+
+// Radius of the open-HH circle marker (px at scale=1).
+// Exported so accent-open tip placement can be derived without magic numbers.
+export const OPEN_CIRCLE_RADIUS = 4;
+
+// Extra gap (px at scale=1) between the top of the open-HH circle and the
+// accent-mark baseline when both are shown (accent-open articulation).
+export const ACCENT_OPEN_GAP = 5;
