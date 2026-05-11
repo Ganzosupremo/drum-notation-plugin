@@ -51,7 +51,9 @@ export function renderHiHatNote(
         }
         if (!skipAccents) {
             renderOpenCircle(svg, x, y, scale);
-            renderAccentMark(svg, x, y, y - 51 * scale, scale);
+            // accent baseline above open circle:
+            // circle centre = y − 34*scale, circle top = y − 38*scale, gap = 5px
+            renderAccentMark(svg, x, y, y - 43 * scale, scale);
         }
         return;
     }

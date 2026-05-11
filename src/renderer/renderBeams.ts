@@ -2,6 +2,8 @@ import { BeamGroup } from "../types";
 
 import { createSVGElement } from "./svgHelper";
 
+import { STEM_TOP } from "./constants";
+
 export function renderBeams(
     svg: SVGSVGElement,
     groups: BeamGroup[],
@@ -13,9 +15,9 @@ export function renderBeams(
         for (let b = 0; b < count; b++) {
             const beam = createSVGElement("line");
 
-            // Primary beam anchors at the stem top (y - 35 * scale).
+            // Primary beam anchors at the stem top.
             // Additional beams stack 4 * scale px below (toward noteheads).
-            const yPos = group.y - 35 * scale + b * 4 * scale;
+            const yPos = group.y - STEM_TOP * scale + b * 4 * scale;
 
             beam.setAttribute("x1", group.startX.toString());
             beam.setAttribute("y1", yPos.toString());

@@ -3,6 +3,7 @@ import { DrumNotation, TimeSignature } from "types";
 import {
     ROW_HEIGHT,
     TOP_OFFSET,
+    STEM_TOP,
     START_X,
     getCellWidth,
 } from "./constants";
@@ -35,7 +36,7 @@ export function renderDrumNotation(
 ) {
     const beatsPerBar = timeSignature?.beatsPerBar ?? 4;
     const subdivisionsPerBeat = notation.subdivisionsPerBeat;
-    const height = notation.lines.length * ROW_HEIGHT + 40;
+    const height = TOP_OFFSET + notation.lines.length * ROW_HEIGHT + 20;
 
     // Compute adaptive cell width based on subdivision density
     const cellWidth = getCellWidth(subdivisionsPerBeat ?? 0);
@@ -112,7 +113,7 @@ export function renderDrumNotation(
     if (rowYs.length > 0) {
         const firstY = rowYs[0] as number;
         const lastY = rowYs[rowYs.length - 1] as number;
-        const topY = firstY - 18;
+        const topY = firstY - (STEM_TOP + 20);
         const bottomY = lastY + 12;
 
         renderBarLines(svg, topY, bottomY, maxCellCount, beatsPerBar, subdivisionsPerBeat, cellWidth);

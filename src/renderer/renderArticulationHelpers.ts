@@ -2,11 +2,16 @@ import { createSVGElement } from "./svgHelper";
 
 import { GLYPHS } from "./smufl";
 
+import { STEM_TOP, OPEN_CIRCLE_ABOVE_STEM, ACCENT_ABOVE_STEM } from "./constants";
+
+// Radius of the open-HH circle marker (px at scale=1).
+const OPEN_CIRCLE_RADIUS = 4;
+
 export function renderOpenCircle(svg: SVGSVGElement, x: number, y: number, scale: number = 1) {
     const circle = createSVGElement("circle");
     circle.setAttribute("cx", x.toString());
-    circle.setAttribute("cy", (y - 42 * scale).toString());
-    circle.setAttribute("r", (4 * scale).toString());
+    circle.setAttribute("cy", (y - (STEM_TOP + OPEN_CIRCLE_ABOVE_STEM) * scale).toString());
+    circle.setAttribute("r", (OPEN_CIRCLE_RADIUS * scale).toString());
     circle.setAttribute("fill", "none");
     circle.setAttribute("stroke", "#111");
     circle.setAttribute("stroke-width", "1.5");
@@ -15,9 +20,11 @@ export function renderOpenCircle(svg: SVGSVGElement, x: number, y: number, scale
 
 export function renderAccentMark(svg: SVGSVGElement, x: number, y: number, tipYOverride?: number, scale: number = 1) {
     // articAccentAbove (U+E4A0) sits entirely above its text baseline.
-    // Default: baseline at stem top (y - 35*scale) with a 2px gap → y - 37*scale.
-    // tipYOverride lets callers shift the glyph for stemless noteheads.
-    const baselineY = tipYOverride !== undefined ? tipYOverride : y - 37 * scale;
+    // Default: baseline placed ACCENT_ABOVE_STEM px above the stem top.
+    // tipYOverride lets callers shift the glyph (e.g. for accent-open HH).
+    const baselineY = tipYOverride !== undefined
+        ? tipYOverride
+        : y - (STEM_TOP + ACCENT_ABOVE_STEM) * scale;
 
     const text = createSVGElement("text");
     text.setAttribute("x", x.toString());

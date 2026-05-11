@@ -29,22 +29,38 @@ export function getCellWidth(subdivisionsPerBeat: number): number {
 }
 
 // Height of each row in the grid
-export const ROW_HEIGHT = 40;
+export const ROW_HEIGHT = 32;
 
 // X position for the first cell in the grid
 export const START_X = 120;
 
 // Y position for the first row
-export const START_Y = 40;
+export const START_Y = 70;
 
 // X position for the first row's label
 export const LABEL_X = 20;
 
 // Y position for the first row's label
-export const LABEL_Y = 40;
+export const LABEL_Y = 70;
 
-// Space for 4 rows + some padding
-export const TOP_OFFSET = 40;
+// Top offset — headroom above the first row's staff line for stems, beams, accents.
+export const TOP_OFFSET = 70;
 
 // Total width of 16 cells + some padding
 export const SVG_WIDTH = 1000;
+
+// --- Vertical stem / articulation geometry (all in px at scale=1) ---
+
+// Pixels above the row y-coordinate where the stem *starts* (near the notehead).
+export const STEM_BOTTOM = 5;
+
+// Pixels above the row y-coordinate where the stem *ends* (at the beam level).
+// Must be < ROW_HEIGHT − STEM_BOTTOM so stems from row n do not cross row n−1.
+// At ROW_HEIGHT=32: 32 − 5 = 27  →  row n stem top = y_n − 27 = y_{n−1} + 32 − 27 = y_{n−1} + 5  ✓
+export const STEM_TOP = 27;
+
+// Distance above the stem top at which the open-HH circle is centred.
+export const OPEN_CIRCLE_ABOVE_STEM = 7;
+
+// Distance above the stem top at which a regular accent baseline is placed.
+export const ACCENT_ABOVE_STEM = 2;
