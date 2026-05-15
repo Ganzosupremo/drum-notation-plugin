@@ -31,9 +31,6 @@ export function getCellWidth(subdivisionsPerBeat: number): number {
 // Height of each row in the grid
 export const ROW_HEIGHT = 32;
 
-// X position for the first cell in the grid
-export const START_X = 120;
-
 // --- Single 5-line drum staff geometry ---
 
 // Distance between adjacent staff lines (px).
