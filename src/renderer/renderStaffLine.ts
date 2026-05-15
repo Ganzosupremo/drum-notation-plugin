@@ -1,6 +1,6 @@
 import { createSVGElement } from "./svgHelper";
 
-import { START_X, STAFF_MID_Y, STAFF_S } from "./constants";
+import { START_X_WITH_LABELS, STAFF_MID_Y, STAFF_S } from "./constants";
 
 // Draws the 5-line drum staff across the full SVG width.
 // If ledgerYs are provided, also draws full-width ledger lines at those y positions
@@ -8,9 +8,10 @@ import { START_X, STAFF_MID_Y, STAFF_S } from "./constants";
 export function renderStaff(
     svg: SVGSVGElement,
     totalWidth: number,
-    ledgerYs: number[] = []
+    ledgerYs: number[] = [],
+    startX: number = START_X_WITH_LABELS
 ): void {
-    const x1 = START_X;
+    const x1 = startX;
     const x2 = totalWidth - 10;
 
     for (let i = -2; i <= 2; i++) {

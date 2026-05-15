@@ -2,7 +2,7 @@ import { createSVGElement } from "./svgHelper";
 
 import {
     CELL_WIDTH,
-    START_X
+    START_X_WITH_LABELS
 } from "./constants";
 
 export function renderBarLines(
@@ -12,7 +12,8 @@ export function renderBarLines(
     length: number,
     beatsPerBar = 4,
     subdivisionsPerBeat?: number,
-    cellWidth: number = CELL_WIDTH
+    cellWidth: number = CELL_WIDTH,
+    startX: number = START_X_WITH_LABELS
 ) {
     const subdiv = subdivisionsPerBeat && subdivisionsPerBeat > 0
         ? subdivisionsPerBeat
@@ -24,7 +25,7 @@ export function renderBarLines(
     for (let i = 0; i < length; i++) {
         if (period <= 0 || (i + 1) % period !== 0) continue;
 
-        const x = START_X + (i + 1) * cellWidth;
+        const x = startX + (i + 1) * cellWidth;
 
         const bar = createSVGElement("line");
         bar.setAttribute("x1", x.toString());
@@ -41,13 +42,14 @@ export function renderBracketLines(
     topY: number,
     bottomY: number,
     cellCount?: number,
-    cellWidth: number = CELL_WIDTH
+    cellWidth: number = CELL_WIDTH,
+    startX: number = START_X_WITH_LABELS
 ) {
     // Opening bracket at the left edge
     const open = createSVGElement("line");
-    open.setAttribute("x1", START_X.toString());
+    open.setAttribute("x1", startX.toString());
     open.setAttribute("y1", topY.toString());
-    open.setAttribute("x2", START_X.toString());
+    open.setAttribute("x2", startX.toString());
     open.setAttribute("y2", bottomY.toString());
     open.classList.add("drum-bar");
     svg.appendChild(open);
@@ -57,7 +59,7 @@ export function renderBracketLines(
     // measure boundaries (not every beat), so it no longer coincides with a
     // beat barline when there is more than one measure.
     if (cellCount && cellCount > 0) {
-        const closeX = START_X + cellCount * cellWidth;
+        const closeX = startX + cellCount * cellWidth;
         const close = createSVGElement("line");
         close.setAttribute("x1", closeX.toString());
         close.setAttribute("y1", topY.toString());

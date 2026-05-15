@@ -29,7 +29,7 @@ type RenderBracketLines = typeof import("./renderBarLines").renderBracketLines;
 let renderBarLines: RenderBarLines;
 let renderBracketLines: RenderBracketLines;
 
-const START_X = 120;
+const START_X = 80;
 const CELL_WIDTH = 40;
 
 before(async () => {

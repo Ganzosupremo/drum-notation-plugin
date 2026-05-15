@@ -4,7 +4,8 @@ import {
     STAFF_MID_Y,
     STAFF_S,
     STAFF_SVG_HEIGHT,
-    START_X,
+    START_X_WITH_LABELS,
+    START_X_NO_LABELS,
     getCellWidth,
 } from "./constants";
 
@@ -40,12 +41,14 @@ export function renderDrumNotation(
     notation: DrumNotation,
     container: HTMLElement,
     timeSignature?: TimeSignature,
-    scale: number = 1
+    scale: number = 1,
+    showLabels: boolean = true
 ) {
     const beatsPerBar = timeSignature?.beatsPerBar ?? 4;
     const subdivisionsPerBeat = notation.subdivisionsPerBeat;
 
     const cellWidth = getCellWidth(subdivisionsPerBeat ?? 0);
+    const startX = showLabels ? START_X_WITH_LABELS : START_X_NO_LABELS;
 
     const wrapper = document.createElement("div");
     wrapper.className = "drum-container";
@@ -59,7 +62,7 @@ export function renderDrumNotation(
 
     const layouts = notation.lines.map((line) => ({
         line,
-        ...buildLayout(line.instrument, line.pattern, cellWidth),
+        ...buildLayout(line.instrument, line.pattern, cellWidth, startX),
     }));
 
     // Sort instruments into canonical staff order (CC top → HF bottom).
@@ -71,7 +74,7 @@ export function renderDrumNotation(
     });
 
     const maxCellCount = layouts.reduce((m, l) => Math.max(m, l.cellCount), 0);
-    const svgWidth = Math.max(400, START_X + (maxCellCount + 1) * cellWidth);
+    const svgWidth = Math.max(400, startX + (maxCellCount + 1) * cellWidth);
 
     const svg = createSVGElement("svg");
     svg.setAttribute("width", svgWidth.toString());
@@ -86,7 +89,8 @@ export function renderDrumNotation(
         firstLayout?.cellCount ?? 0,
         timeSignature,
         subdivisionsPerBeat,
-        cellWidth
+        cellWidth,
+        startX
     );
 
     // Feel indicator (Swing / Triplet) — also at y≈20.
@@ -98,16 +102,18 @@ export function renderDrumNotation(
         .map(l => STAFF_MID_Y + (STAFF_OFFSET[l.line.instrument] ?? 0));
 
     // Draw the 5-line staff + any ledger lines.
-    renderStaff(svg, svgWidth, ledgerYs);
+    renderStaff(svg, svgWidth, ledgerYs, startX);
 
     // Bar lines and bracket span the 5 staff lines (line 5 → line 1).
     const staffTop    = STAFF_MID_Y - 2 * STAFF_S;
     const staffBottom = STAFF_MID_Y + 2 * STAFF_S;
 
-    // Pass 1: instrument labels, noteheads, stems (accents deferred).
+    // Pass 1: instrument labels (optional), noteheads, stems (accents deferred).
     layouts.forEach(({ line, notes }) => {
         const y = STAFF_MID_Y + (STAFF_OFFSET[line.instrument] ?? 0);
-        renderLabel(svg, line.instrument, y);
+        if (showLabels) {
+            renderLabel(svg, line.instrument, y);
+        }
         renderNotes(svg, notes, y, scale, { skipAccents: true });
     });
 
@@ -133,8 +139,8 @@ export function renderDrumNotation(
         renderNotes(svg, notes, y, scale, { accentsOnly: true });
     });
 
-    renderBarLines(svg, staffTop, staffBottom, maxCellCount, beatsPerBar, subdivisionsPerBeat, cellWidth);
-    renderBracketLines(svg, staffTop, staffBottom, maxCellCount, cellWidth);
+    renderBarLines(svg, staffTop, staffBottom, maxCellCount, beatsPerBar, subdivisionsPerBeat, cellWidth, startX);
+    renderBracketLines(svg, staffTop, staffBottom, maxCellCount, cellWidth, startX);
 
     wrapper.appendChild(svg);
     container.appendChild(wrapper);

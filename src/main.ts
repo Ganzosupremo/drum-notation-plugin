@@ -37,7 +37,8 @@ export default class DrumNotationPlugin extends Plugin {
                         ?? buildTimeSignature(beatsPerBar, 4);
 
                     const notationScale = (this.settings.notationScale ?? DEFAULT_SETTINGS.notationScale) / 100;
-                    renderDrumNotation(parsed, el, timeSignature, notationScale);
+                    const showLabels = this.settings.showInstrumentLabels ?? DEFAULT_SETTINGS.showInstrumentLabels;
+                    renderDrumNotation(parsed, el, timeSignature, notationScale, showLabels);
 
                 } catch (error) {
 

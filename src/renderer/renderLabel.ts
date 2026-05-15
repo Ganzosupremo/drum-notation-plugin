@@ -1,9 +1,6 @@
 import { createSVGElement } from "./svgHelper";
 
-import {
-    LABEL_X,
-    INSTRUMENT_NAMES,
-} from "./constants";
+import { LABEL_X } from "./constants";
 
 export function renderLabel(
     svg: SVGSVGElement,
@@ -12,7 +9,7 @@ export function renderLabel(
         const label = createSVGElement("text");
         label.setAttribute("x", LABEL_X.toString());
         label.setAttribute("y", y.toString());
-        label.textContent = INSTRUMENT_NAMES[instrument] ?? instrument;
+        label.textContent = instrument;
         label.classList.add("drum-label");
         svg.appendChild(label);
 }

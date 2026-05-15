@@ -4,11 +4,13 @@ import MyPlugin from "./main";
 export interface MyPluginSettings {
         beatsPerBar: number;
         notationScale: number;
+        showInstrumentLabels: boolean;
 }
 
 export const DEFAULT_SETTINGS: MyPluginSettings = {
         beatsPerBar: 4,
-        notationScale: 100
+        notationScale: 100,
+        showInstrumentLabels: true,
 };
 
 export class SampleSettingTab extends PluginSettingTab {
@@ -23,6 +25,16 @@ export class SampleSettingTab extends PluginSettingTab {
                 const {containerEl} = this;
 
                 containerEl.empty();
+
+                new Setting(containerEl)
+                        .setName('Show instrument labels')
+                        .setDesc('Display the short instrument code (HH, SD, BD …) to the left of each staff. Turn off for a cleaner chart when the instruments are self-evident.')
+                        .addToggle(toggle => toggle
+                                .setValue(this.plugin.settings.showInstrumentLabels)
+                                .onChange(async (value) => {
+                                        this.plugin.settings.showInstrumentLabels = value;
+                                        await this.plugin.saveSettings();
+                                }));
 
                 new Setting(containerEl)
                         .setName('Beats per bar')

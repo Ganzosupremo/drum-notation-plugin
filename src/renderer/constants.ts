@@ -37,7 +37,7 @@ export const START_X = 120;
 // --- Single 5-line drum staff geometry ---
 
 // Distance between adjacent staff lines (px).
-export const STAFF_S = 10;
+export const STAFF_S = 12;
 
 // Y coordinate of the middle (3rd) staff line from SVG top.
 // Chosen to leave room above CC's stem for subdivision labels and
@@ -45,8 +45,14 @@ export const STAFF_S = 10;
 export const STAFF_MID_Y = 95;
 
 // Fixed SVG height for the single-staff layout.
-// Derived: STAFF_MID_Y + 3*STAFF_S (HF offset) + STEM_TOP (27) + padding (18) ≈ 170
-export const STAFF_SVG_HEIGHT = 170;
+// Derived: STAFF_MID_Y + 3*STAFF_S (HF offset=36) + STEM_TOP (27) + padding (18) = 176
+export const STAFF_SVG_HEIGHT = 176;
+
+// X where notes begin when labels are shown (leaves room for short code labels).
+export const START_X_WITH_LABELS = 80;
+
+// X where notes begin when labels are hidden.
+export const START_X_NO_LABELS = 30;
 
 // Y position for the first row
 export const START_Y = 70;

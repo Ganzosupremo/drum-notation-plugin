@@ -2,7 +2,7 @@ import { Articulation, NoteEvent } from "types";
 
 import {
     CELL_WIDTH,
-    START_X,
+    START_X_WITH_LABELS,
 } from "../../renderer/constants";
 
 export interface LayoutResult {
@@ -19,7 +19,8 @@ const OPEN_ARTICULATION_INSTRUMENTS = new Set(["HH"]);
 export function buildLayout(
     instrument: string,
     pattern: string,
-    cellWidth: number = CELL_WIDTH
+    cellWidth: number = CELL_WIDTH,
+    startX: number = START_X_WITH_LABELS
 ): LayoutResult {
     const notes: NoteEvent[] = [];
     const str = pattern.replace(/\s+/g, "");
@@ -43,7 +44,7 @@ export function buildLayout(
                     symbol: sym,
                     articulation: "ghost",
                     index: cellIndex,
-                    x: START_X + cellIndex * cellWidth + cellWidth / 2,
+                    x: startX + cellIndex * cellWidth + cellWidth / 2,
                 });
                 i = close + 1;
                 cellIndex++;
@@ -65,7 +66,7 @@ export function buildLayout(
                     symbol: nextChar,
                     articulation: accentArticulation,
                     index: cellIndex,
-                    x: START_X + cellIndex * cellWidth + cellWidth / 2,
+                    x: startX + cellIndex * cellWidth + cellWidth / 2,
                 });
                 i += 2;
                 cellIndex++;
@@ -95,7 +96,7 @@ export function buildLayout(
                     symbol: ch,
                     articulation: accentArticulation,
                     index: cellIndex,
-                    x: START_X + cellIndex * cellWidth + cellWidth / 2,
+                    x: startX + cellIndex * cellWidth + cellWidth / 2,
                 });
                 i += 2;
                 cellIndex++;
@@ -110,7 +111,7 @@ export function buildLayout(
             symbol: ch,
             articulation,
             index: cellIndex,
-            x: START_X + cellIndex * cellWidth + cellWidth / 2,
+            x: startX + cellIndex * cellWidth + cellWidth / 2,
         });
         i++;
         cellIndex++;

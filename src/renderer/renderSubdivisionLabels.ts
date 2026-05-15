@@ -1,6 +1,6 @@
 import {
     CELL_WIDTH,
-    START_X
+    START_X_WITH_LABELS
 } from './constants';
 
 import { TimeSignature } from "types";
@@ -12,7 +12,8 @@ export function renderSubdivisionLabels(
     length: number,
     timeSignature?: TimeSignature,
     subdivisionsOverride?: number,
-    cellWidth: number = CELL_WIDTH
+    cellWidth: number = CELL_WIDTH,
+    startX: number = START_X_WITH_LABELS
 ) {
     const beatsPerBar = timeSignature?.beatsPerBar ?? 4;
 
@@ -66,7 +67,7 @@ export function renderSubdivisionLabels(
             ? (beatIndex + 1).toString()
             : rawLabel;
 
-        const x = START_X + i * cellWidth + cellWidth / 2;
+        const x = startX + i * cellWidth + cellWidth / 2;
         const label = createSVGElement('text');
 
         label.setAttribute('x', x.toString());
