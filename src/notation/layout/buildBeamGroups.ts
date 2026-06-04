@@ -11,7 +11,9 @@ export function buildBeamGroups(
 
     const groups: BeamGroup[] = [];
 
-    if (notes.length < 2) return groups;
+    const beamableNotes = notes.filter(n => (n.duration ?? 1) === 1);
+
+    if (beamableNotes.length < 2) return groups;
 
     // Determine subdivisions per beat
     let subdivisionsPerBeat: number;
@@ -37,7 +39,7 @@ export function buildBeamGroups(
 
     // Group notes by beat index
     const beatGroups = new Map<number, NoteEvent[]>();
-    for (const note of notes) {
+    for (const note of beamableNotes) {
         const beat = Math.floor(note.index / beatWidth);
         if (!beatGroups.has(beat)) {
             beatGroups.set(beat, []);

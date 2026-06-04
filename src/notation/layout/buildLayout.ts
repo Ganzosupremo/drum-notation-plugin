@@ -26,9 +26,29 @@ export function buildLayout(
     const str = pattern.replace(/\s+/g, "");
     let i = 0;
     let cellIndex = 0;
+    let lastNote: NoteEvent | undefined;
 
     const articulated = ARTICULATED_INSTRUMENTS.has(instrument);
     const supportsOpen = OPEN_ARTICULATION_INSTRUMENTS.has(instrument);
+
+    const pushNote = (symbol: string, articulation: Articulation) => {
+        const note: NoteEvent = {
+            instrument,
+            symbol,
+            articulation,
+            index: cellIndex,
+            x: startX + cellIndex * cellWidth + cellWidth / 2,
+            duration: 1,
+        };
+        notes.push(note);
+        lastNote = note;
+    };
+
+    const extendTie = () => {
+        if (lastNote && lastNote.index + lastNote.duration === cellIndex) {
+            lastNote.duration += 1;
+        }
+    };
 
     while (i < str.length) {
         const ch: string = str[i] ?? "";
@@ -39,13 +59,7 @@ export function buildLayout(
             if (close !== -1) {
                 const inner = str.substring(i + 1, close);
                 const sym: string = inner.length > 0 ? (inner[0] ?? "o") : "o";
-                notes.push({
-                    instrument,
-                    symbol: sym,
-                    articulation: "ghost",
-                    index: cellIndex,
-                    x: startX + cellIndex * cellWidth + cellWidth / 2,
-                });
+                pushNote(sym, "ghost");
                 i = close + 1;
                 cellIndex++;
             } else {
@@ -61,13 +75,7 @@ export function buildLayout(
             if (nextChar !== null && nextChar !== "-") {
                 const accentArticulation: Articulation =
                     (supportsOpen && nextChar === "o") ? "accent-open" : "accent";
-                notes.push({
-                    instrument,
-                    symbol: nextChar,
-                    articulation: accentArticulation,
-                    index: cellIndex,
-                    x: startX + cellIndex * cellWidth + cellWidth / 2,
-                });
+                pushNote(nextChar, accentArticulation);
                 i += 2;
                 cellIndex++;
             } else {
@@ -85,19 +93,21 @@ export function buildLayout(
             continue;
         }
 
+        // Tie extension: ~ extends the previous note by one cell
+        if (ch === "~") {
+            extendTie();
+            i++;
+            cellIndex++;
+            continue;
+        }
+
         // Accent suffix: x^ or o^ — supported for HH, SD, BD
         if (articulated) {
             const nextChar: string | null = i + 1 < str.length ? (str[i + 1] ?? null) : null;
             if (nextChar === "^") {
                 const accentArticulation: Articulation =
                     (supportsOpen && ch === "o") ? "accent-open" : "accent";
-                notes.push({
-                    instrument,
-                    symbol: ch,
-                    articulation: accentArticulation,
-                    index: cellIndex,
-                    x: startX + cellIndex * cellWidth + cellWidth / 2,
-                });
+                pushNote(ch, accentArticulation);
                 i += 2;
                 cellIndex++;
                 continue;
@@ -106,13 +116,7 @@ export function buildLayout(
 
         // Open articulation (HH-only standalone 'o') or normal note
         const articulation: Articulation = (supportsOpen && ch === "o") ? "open" : "normal";
-        notes.push({
-            instrument,
-            symbol: ch,
-            articulation,
-            index: cellIndex,
-            x: startX + cellIndex * cellWidth + cellWidth / 2,
-        });
+        pushNote(ch, articulation);
         i++;
         cellIndex++;
     }

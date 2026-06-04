@@ -34,6 +34,9 @@ export interface NoteEvent {
     index: number;
 
     x: number;
+
+    // Duration in grid cells (subdivision units). 1 = one cell.
+    duration: number;
 }
 
 export interface BeamGroup {

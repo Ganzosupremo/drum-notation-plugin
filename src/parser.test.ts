@@ -894,3 +894,22 @@ describe("buildLayout — HH accent-open articulation parsing", () => {
         assert.equal(notes[1]?.articulation, "accent");
     });
 });
+
+describe("buildLayout — tie duration parsing", () => {
+
+    test("tie extends the previous note duration", () => {
+        const { notes, cellCount } = buildLayout("HH", "x~-");
+
+        assert.equal(cellCount, 3);
+        assert.equal(notes.length, 1);
+        assert.equal(notes[0]?.duration, 2);
+    });
+
+    test("leading tie is treated as a rest cell", () => {
+        const { notes } = buildLayout("HH", "~x-");
+
+        assert.equal(notes.length, 1);
+        assert.equal(notes[0]?.index, 1);
+        assert.equal(notes[0]?.duration, 1);
+    });
+});
