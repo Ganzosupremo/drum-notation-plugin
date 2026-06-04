@@ -13,6 +13,9 @@ import { STEM_TOP, OPEN_CIRCLE_ABOVE_STEM, OPEN_CIRCLE_RADIUS, ACCENT_OPEN_GAP }
 export interface RenderNoteOpts {
     skipAccents?: boolean;
     accentsOnly?: boolean;
+    // x positions where the accent mark should be suppressed because a higher-priority
+    // instrument (closer to the top of the staff) has already drawn one at that x.
+    suppressedAccentXs?: Set<number>;
 }
 
 export function renderHiHatNote(
@@ -23,7 +26,8 @@ export function renderHiHatNote(
     scale: number = 1,
     opts: RenderNoteOpts = {}
 ) {
-    const { skipAccents = false, accentsOnly = false } = opts;
+    const { skipAccents = false, accentsOnly = false, suppressedAccentXs } = opts;
+    const accentSuppressed = suppressedAccentXs?.has(x) ?? false;
 
     if (articulation === "open") {
         if (!accentsOnly) {
@@ -53,13 +57,15 @@ export function renderHiHatNote(
         }
         if (!skipAccents) {
             renderOpenCircle(svg, x, y, scale);
-            // Accent baseline = circle centre − radius − gap (all scaled):
-            //   circle centre: y − (STEM_TOP + OPEN_CIRCLE_ABOVE_STEM)
-            //   circle top:    − OPEN_CIRCLE_RADIUS
-            //   gap above:     − ACCENT_OPEN_GAP
-            renderAccentMark(svg, x, y,
-                y - (STEM_TOP + OPEN_CIRCLE_ABOVE_STEM + OPEN_CIRCLE_RADIUS + ACCENT_OPEN_GAP) * scale,
-                scale);
+            if (!accentSuppressed) {
+                // Accent baseline = circle centre − radius − gap (all scaled):
+                //   circle centre: y − (STEM_TOP + OPEN_CIRCLE_ABOVE_STEM)
+                //   circle top:    − OPEN_CIRCLE_RADIUS
+                //   gap above:     − ACCENT_OPEN_GAP
+                renderAccentMark(svg, x, y,
+                    y - (STEM_TOP + OPEN_CIRCLE_ABOVE_STEM + OPEN_CIRCLE_RADIUS + ACCENT_OPEN_GAP) * scale,
+                    scale);
+            }
         }
         return;
     }
@@ -93,7 +99,7 @@ export function renderHiHatNote(
         renderStem(svg, x, y, scale);
     }
 
-    if (!skipAccents && articulation === "accent") {
+    if (!skipAccents && !accentSuppressed && articulation === "accent") {
         renderAccentMark(svg, x, y, undefined, scale);
     }
 }

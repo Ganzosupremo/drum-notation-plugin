@@ -21,7 +21,8 @@ export function renderKickNote(
     scale: number = 1,
     opts: RenderNoteOpts = {}
 ) {
-    const { skipAccents = false, accentsOnly = false } = opts;
+    const { skipAccents = false, accentsOnly = false, suppressedAccentXs } = opts;
+    const accentSuppressed = suppressedAccentXs?.has(x) ?? false;
 
     if (articulation === "ghost") {
         if (accentsOnly) return;
@@ -51,7 +52,7 @@ export function renderKickNote(
         renderStem(svg, x, y, scale, KICK_STEM_UP);
     }
 
-    if (!skipAccents && articulation === "accent") {
+    if (!skipAccents && !accentSuppressed && articulation === "accent") {
         renderAccentMark(svg, x, y, undefined, scale);
     }
 }

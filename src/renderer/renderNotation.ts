@@ -134,9 +134,29 @@ export function renderDrumNotation(
     });
 
     // Pass 3: accents and open-circle markers (on top of beams).
+    // Accent marks are rendered at most once per x-position: the topmost instrument
+    // (lowest y, first in canonical order) that has an accented note "claims" that x.
+    // Lower instruments at the same x get suppressedAccentXs so they skip the mark.
+    const claimedAccentXs = new Set<number>();
     layouts.forEach(({ line, notes }) => {
         const y = STAFF_MID_Y + (STAFF_OFFSET[line.instrument] ?? 0);
-        renderNotes(svg, notes, y, scale, { accentsOnly: true });
+
+        // Collect x positions where a higher-priority instrument already has an accent.
+        const suppressedAccentXs = new Set<number>(
+            notes
+                .filter(n => (n.articulation === "accent" || n.articulation === "accent-open")
+                    && claimedAccentXs.has(n.x))
+                .map(n => n.x)
+        );
+
+        renderNotes(svg, notes, y, scale, { accentsOnly: true, suppressedAccentXs });
+
+        // Claim all accented x positions for this instrument so lower instruments skip them.
+        notes.forEach(n => {
+            if (n.articulation === "accent" || n.articulation === "accent-open") {
+                claimedAccentXs.add(n.x);
+            }
+        });
     });
 
     renderBarLines(svg, staffTop, staffBottom, maxCellCount, beatsPerBar, subdivisionsPerBeat, cellWidth, startX);
