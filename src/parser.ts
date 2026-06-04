@@ -161,6 +161,21 @@ function parseSubdivisions(value: string): number | undefined {
     return undefined;
 }
 
+function parseHairpinLine(line: string): string | undefined {
+    const segments = line.split("|").map(s => s.trim());
+    const instrument = (segments[0] ?? "").toLowerCase();
+
+    if (instrument !== "hairpin" && instrument !== "hp") return undefined;
+
+    const innerSegments = segments.slice(1);
+    if (innerSegments[innerSegments.length - 1] === "") {
+        innerSegments.pop();
+    }
+    const pattern = innerSegments.join("");
+
+    return pattern || undefined;
+}
+
 function applyHeaderResult(
     result: { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number; feel?: "straight" | "swing" | "triplet" } | undefined,
     state: { beatsPerBar?: number; timeSignature?: TimeSignature; subdivisionsPerBeat?: number; feel?: "straight" | "swing" | "triplet" }
@@ -229,9 +244,16 @@ export function parseDrumNotation(
     const timeSignature = headerResult.timeSignature;
     const subdivisionsPerBeat = headerResult.subdivisionsPerBeat;
     const feel = headerResult.feel;
+    let hairpinPattern: string | undefined;
 
     for (const line of lines) {
         if (parseHeaderLine(line, headerResult.warnings) !== undefined) {
+            continue;
+        }
+
+        const hairpin = parseHairpinLine(line);
+        if (hairpin) {
+            hairpinPattern = hairpin;
             continue;
         }
 
@@ -261,7 +283,8 @@ export function parseDrumNotation(
         timeSignature,
         subdivisionsPerBeat,
         feel,
-        warnings: headerResult.warnings.length > 0 ? headerResult.warnings : undefined
+        warnings: headerResult.warnings.length > 0 ? headerResult.warnings : undefined,
+        hairpinPattern
     };
 }
 

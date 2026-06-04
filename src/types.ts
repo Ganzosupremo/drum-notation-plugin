@@ -19,6 +19,7 @@ export interface DrumNotation {
     subdivisionsPerBeat?: number;
     feel?: "straight" | "swing" | "triplet";
     warnings?: string[];
+    hairpinPattern?: string;
 }
 
 export type Articulation = "normal" | "open" | "ghost" | "accent" | "accent-open";

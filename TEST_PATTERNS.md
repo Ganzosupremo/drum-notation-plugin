@@ -52,6 +52,34 @@ BD |o--------o--------------|
 
 Expected: labels show 1 & a, beams split per beat.
 
+## Duration ties (sustain lines)
+
+```drums time 4/4
+HH |x~--x---x~--x---|
+SD |----o~------o---|
+BD |o~------o~------|
+```
+
+Expected: notes followed by `~` render a horizontal sustain line spanning the tied cells.
+
+## Hairpin dynamics (cresc/decresc)
+
+```drums time 4/4
+hairpin |<------->|
+HH |x-x-x-x-x-x-x-x-|
+SD |----o-------o---|
+BD |o-------o-------|
+```
+
+Expected: a crescendo hairpin from beat 1 to beat 4, below the staff.
+
+```drums time 4/4
+hairpin |------->|
+HH |x-x-x-x-x-x-x-x-|
+```
+
+Expected: a decrescendo hairpin from beat 1 to beat 4, below the staff.
+
 ## Header line (inline)
 
 ```drums time 5/4

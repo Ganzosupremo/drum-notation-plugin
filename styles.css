@@ -76,6 +76,18 @@
     stroke-width: 3;
 }
 
+.drum-duration {
+    stroke: #111;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+}
+
+.drum-hairpin {
+    stroke: #222;
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
 /*
  * SMuFL glyph notehead — rendered as an SVG <text> element using the
  * Bravura font.

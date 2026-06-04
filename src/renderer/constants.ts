@@ -45,6 +45,9 @@ export const STAFF_MID_Y = 95;
 // Derived: STAFF_MID_Y + 3*STAFF_S (HF offset=36) + STEM_TOP (27) + padding (18) = 176
 export const STAFF_SVG_HEIGHT = 176;
 
+// Vertical offset below the staff for hairpin dynamics.
+export const HAIRPIN_OFFSET = 18;
+
 // X where notes begin when labels are shown (leaves room for short code labels).
 export const START_X_WITH_LABELS = 80;
 

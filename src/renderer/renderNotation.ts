@@ -7,6 +7,8 @@ import {
     START_X_WITH_LABELS,
     START_X_NO_LABELS,
     getCellWidth,
+    STEM_TOP,
+    HAIRPIN_OFFSET,
 } from "./constants";
 
 import {
@@ -36,6 +38,35 @@ import { renderBeams } from "./renderBeams";
 import { buildLayout } from "notation/layout/buildLayout";
 
 import { renderFeelIndicator } from "./renderFeelIndicator";
+
+import { renderHairpin } from "./renderHairpin";
+
+function renderDurationLines(
+    svg: SVGSVGElement,
+    notes: { x: number; duration?: number }[],
+    y: number,
+    cellWidth: number,
+    scale: number,
+    stemUp: boolean
+) {
+    notes.forEach((note) => {
+        const duration = note.duration ?? 1;
+        if (duration <= 1) return;
+
+        const line = createSVGElement("line");
+        const yPos = stemUp
+            ? y - (STEM_TOP + 4) * scale
+            : y + (STEM_TOP + 4) * scale;
+        const endX = note.x + (duration - 1) * cellWidth;
+
+        line.setAttribute("x1", note.x.toString());
+        line.setAttribute("y1", yPos.toString());
+        line.setAttribute("x2", endX.toString());
+        line.setAttribute("y2", yPos.toString());
+        line.classList.add("drum-duration");
+        svg.appendChild(line);
+    });
+}
 
 export function renderDrumNotation(
     notation: DrumNotation,
@@ -108,6 +139,11 @@ export function renderDrumNotation(
     const staffTop    = STAFF_MID_Y - 2 * STAFF_S;
     const staffBottom = STAFF_MID_Y + 2 * STAFF_S;
 
+    if (notation.hairpinPattern) {
+        const hairpinY = staffBottom + HAIRPIN_OFFSET;
+        renderHairpin(svg, notation.hairpinPattern, cellWidth, startX, hairpinY, scale);
+    }
+
     // Pass 1: instrument labels (optional), noteheads, stems (accents deferred).
     layouts.forEach(({ line, notes }) => {
         const y = STAFF_MID_Y + (STAFF_OFFSET[line.instrument] ?? 0);
@@ -131,6 +167,13 @@ export function renderDrumNotation(
             stemUp
         );
         renderBeams(svg, groups, scale);
+    });
+
+    // Pass 2b: duration lines for notes that span multiple cells.
+    layouts.forEach(({ line, notes }) => {
+        const y = STAFF_MID_Y + (STAFF_OFFSET[line.instrument] ?? 0);
+        const stemUp = STEM_UP[line.instrument] ?? true;
+        renderDurationLines(svg, notes, y, cellWidth, scale, stemUp);
     });
 
     // Pass 3: accents and open-circle markers (on top of beams).
