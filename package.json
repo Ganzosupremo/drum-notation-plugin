@@ -23,6 +23,7 @@
                 "typescript": "^5.4.3"
         },
         "dependencies": {
-                "obsidian": "latest"
+                "obsidian": "latest",
+                "vexflow": "^5.0.0"
         }
 }

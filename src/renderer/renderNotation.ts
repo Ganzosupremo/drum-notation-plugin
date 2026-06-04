@@ -1,71 +1,77 @@
 import { DrumNotation, TimeSignature } from "types";
 
 import {
-    STAFF_MID_Y,
-    STAFF_S,
-    STAFF_SVG_HEIGHT,
     START_X_WITH_LABELS,
     START_X_NO_LABELS,
     getCellWidth,
-    STEM_TOP,
-    HAIRPIN_OFFSET,
+    STAFF_S,
+    STAFF_MID_Y,
 } from "./constants";
 
 import {
     CANONICAL_ORDER,
     STAFF_OFFSET,
     STEM_UP,
-    BEAMED_INSTRUMENTS,
-    LEDGER_INSTRUMENTS,
 } from "./staffPositions";
 
-import { createSVGElement } from "./svgHelper";
-
-import { renderStaff } from "./renderStaffLine";
-
-import { renderLabel } from "./renderLabel";
-
-import { renderNotes } from "./renderNotes";
-
-import { renderBarLines, renderBracketLines } from "./renderBarLines";
-
-import { renderSubdivisionLabels } from "./renderSubdivisionLabels";
-
-import { buildBeamGroups } from "notation/layout/buildBeamGroups";
-
-import { renderBeams } from "./renderBeams";
+import { INSTRUMENT_NAMES } from "./constants";
 
 import { buildLayout } from "notation/layout/buildLayout";
 
-import { renderFeelIndicator } from "./renderFeelIndicator";
+import * as VexFlow from "vexflow";
 
-import { renderHairpin } from "./renderHairpin";
+type HairpinDirection = "crescendo" | "decrescendo";
 
-function renderDurationLines(
-    svg: SVGSVGElement,
-    notes: { x: number; duration?: number }[],
-    y: number,
-    cellWidth: number,
-    scale: number,
-    stemUp: boolean
-) {
-    notes.forEach((note) => {
-        const duration = note.duration ?? 1;
-        if (duration <= 1) return;
+function getBaseDuration(
+    beatUnit: number,
+    subdivisionsPerBeat?: number
+): { duration: string; isTriplet: boolean } {
+    const subdiv = subdivisionsPerBeat ?? 2;
 
-        const line = createSVGElement("line");
-        const yPos = stemUp
-            ? y - (STEM_TOP + 4) * scale
-            : y + (STEM_TOP + 4) * scale;
-        const endX = note.x + (duration - 1) * cellWidth;
+    const mapForQuarter = () => {
+        if (subdiv === 1) return { duration: "4", isTriplet: false };
+        if (subdiv === 2) return { duration: "8", isTriplet: false };
+        if (subdiv === 3) return { duration: "8", isTriplet: true };
+        return { duration: "16", isTriplet: false };
+    };
 
-        line.setAttribute("x1", note.x.toString());
-        line.setAttribute("y1", yPos.toString());
-        line.setAttribute("x2", endX.toString());
-        line.setAttribute("y2", yPos.toString());
-        line.classList.add("drum-duration");
-        svg.appendChild(line);
-    });
+    const mapForEighth = () => {
+        if (subdiv === 1) return { duration: "8", isTriplet: false };
+        if (subdiv === 2) return { duration: "16", isTriplet: false };
+        if (subdiv === 3) return { duration: "16", isTriplet: true };
+        return { duration: "32", isTriplet: false };
+    };
+
+    if (beatUnit === 8) return mapForEighth();
+    return mapForQuarter();
+}
+
+function instrumentLineIndex(instrument: string): number {
+    const offset = STAFF_OFFSET[instrument] ?? 0;
+    return 2 + offset / STAFF_S;
+}
+
+function parseHairpinPattern(pattern: string): { start: number; end: number; direction: HairpinDirection } | undefined {
+    const str = pattern.replace(/\s+/g, "");
+    if (!str) return undefined;
+
+    const firstLt = str.indexOf("<");
+    const firstGt = str.indexOf(">");
+    if (firstLt === -1 && firstGt === -1) return undefined;
+
+    if (firstLt !== -1 && (firstGt === -1 || firstLt < firstGt)) {
+        return {
+            start: firstLt,
+            end: firstGt !== -1 ? firstGt : str.length - 1,
+            direction: "crescendo",
+        };
+    }
+
+    return {
+        start: firstGt === -1 ? 0 : 0,
+        end: firstGt !== -1 ? firstGt : str.length - 1,
+        direction: "decrescendo",
+    };
 }
 
 export function renderDrumNotation(
@@ -77,9 +83,11 @@ export function renderDrumNotation(
 ) {
     const beatsPerBar = timeSignature?.beatsPerBar ?? 4;
     const subdivisionsPerBeat = notation.subdivisionsPerBeat;
+    const beatUnit = timeSignature?.beatUnit ?? 4;
 
     const cellWidth = getCellWidth(subdivisionsPerBeat ?? 0);
     const startX = showLabels ? START_X_WITH_LABELS : START_X_NO_LABELS;
+    const endPadding = 40;
 
     const wrapper = document.createElement("div");
     wrapper.className = "drum-container";
@@ -105,106 +113,154 @@ export function renderDrumNotation(
     });
 
     const maxCellCount = layouts.reduce((m, l) => Math.max(m, l.cellCount), 0);
-    const svgWidth = Math.max(400, startX + (maxCellCount + 1) * cellWidth);
+    const width = Math.max(560, startX + maxCellCount * cellWidth + endPadding);
+    const height = Math.max(200, STAFF_MID_Y + 80);
 
-    const svg = createSVGElement("svg");
-    svg.setAttribute("width", svgWidth.toString());
-    svg.setAttribute("height", STAFF_SVG_HEIGHT.toString());
-    svg.classList.add("drum-svg");
+    const VF = VexFlow as any;
+    const renderer = new VF.Renderer(wrapper, VF.Renderer.Backends.SVG);
+    renderer.resize(width, height);
 
-    const firstLayout = layouts[0];
+    const context = renderer.getContext();
+    const stave = new VF.Stave(startX, 20, width - startX - endPadding);
 
-    // Subdivision labels (beat numbers: 1 e & a …) — at y≈20, above the staff.
-    renderSubdivisionLabels(
-        svg,
-        firstLayout?.cellCount ?? 0,
-        timeSignature,
-        subdivisionsPerBeat,
-        cellWidth,
-        startX
-    );
+    stave.addClef("percussion");
+    stave.addTimeSignature(`${timeSignature?.beatsPerMeasure ?? 4}/${beatUnit}`);
+    stave.setContext(context).draw();
 
-    // Feel indicator (Swing / Triplet) — also at y≈20.
-    renderFeelIndicator(svg, notation.feel);
+    const { duration: baseDuration, isTriplet } = getBaseDuration(beatUnit, subdivisionsPerBeat);
+    const totalCells = maxCellCount;
 
-    // Full-width ledger lines for instruments outside the 5-line staff (CC, HF).
-    const ledgerYs = layouts
-        .filter(l => LEDGER_INSTRUMENTS.has(l.line.instrument))
-        .map(l => STAFF_MID_Y + (STAFF_OFFSET[l.line.instrument] ?? 0));
+    const voices: any[] = [];
+    const beams: any[] = [];
+    const ties: any[] = [];
+    const tuplets: any[] = [];
 
-    // Draw the 5-line staff + any ledger lines.
-    renderStaff(svg, svgWidth, ledgerYs, startX);
-
-    // Bar lines and bracket span the 5 staff lines (line 5 → line 1).
-    const staffTop    = STAFF_MID_Y - 2 * STAFF_S;
-    const staffBottom = STAFF_MID_Y + 2 * STAFF_S;
-
-    if (notation.hairpinPattern) {
-        const hairpinY = staffBottom + HAIRPIN_OFFSET;
-        renderHairpin(svg, notation.hairpinPattern, cellWidth, startX, hairpinY, scale);
+    const ghostNotes: any[] = [];
+    for (let i = 0; i < totalCells; i++) {
+        ghostNotes.push(new VF.GhostNote({ duration: baseDuration }));
     }
-
-    // Pass 1: instrument labels (optional), noteheads, stems (accents deferred).
-    layouts.forEach(({ line, notes }) => {
-        const y = STAFF_MID_Y + (STAFF_OFFSET[line.instrument] ?? 0);
-        if (showLabels) {
-            renderLabel(svg, line.instrument, y);
-        }
-        renderNotes(svg, notes, y, scale, { skipAccents: true });
+    const ghostVoice = new VF.Voice({
+        num_beats: beatsPerBar,
+        beat_value: beatUnit,
     });
+    ghostVoice.setMode(VF.Voice.Mode.SOFT);
+    ghostVoice.addTickables(ghostNotes);
 
-    // Pass 2: beams (rendered after noteheads, before accents).
     layouts.forEach(({ line, notes, cellCount }) => {
-        if (!BEAMED_INSTRUMENTS.has(line.instrument)) return;
-        const y = STAFF_MID_Y + (STAFF_OFFSET[line.instrument] ?? 0);
         const stemUp = STEM_UP[line.instrument] ?? true;
-        const groups = buildBeamGroups(
-            notes,
-            y,
-            cellCount,
-            beatsPerBar,
-            subdivisionsPerBeat,
-            stemUp
-        );
-        renderBeams(svg, groups, scale);
-    });
+        const lineIndex = instrumentLineIndex(line.instrument);
 
-    // Pass 2b: duration lines for notes that span multiple cells.
-    layouts.forEach(({ line, notes }) => {
-        const y = STAFF_MID_Y + (STAFF_OFFSET[line.instrument] ?? 0);
-        const stemUp = STEM_UP[line.instrument] ?? true;
-        renderDurationLines(svg, notes, y, cellWidth, scale, stemUp);
-    });
+        const cellNotes: any[] = [];
+        for (let i = 0; i < cellCount; i++) {
+            const note = new VF.StaveNote({
+                keys: ["c/5"],
+                duration: baseDuration + "r",
+                clef: "percussion",
+                stem_direction: stemUp ? 1 : -1,
+            });
+            if (typeof note.setKeyLine === "function") {
+                note.setKeyLine(0, lineIndex);
+            }
+            cellNotes.push(note);
+        }
 
-    // Pass 3: accents and open-circle markers (on top of beams).
-    // Accent marks are rendered at most once per x-position: the topmost instrument
-    // (lowest y, first in canonical order) that has an accented note "claims" that x.
-    // Lower instruments at the same x get suppressedAccentXs so they skip the mark.
-    const claimedAccentXs = new Set<number>();
-    layouts.forEach(({ line, notes }) => {
-        const y = STAFF_MID_Y + (STAFF_OFFSET[line.instrument] ?? 0);
+        notes.forEach((noteEvent) => {
+            for (let d = 0; d < (noteEvent.duration ?? 1); d++) {
+                const idx = noteEvent.index + d;
+                if (idx < 0 || idx >= cellNotes.length) continue;
 
-        // Collect x positions where a higher-priority instrument already has an accent.
-        const suppressedAccentXs = new Set<number>(
-            notes
-                .filter(n => (n.articulation === "accent" || n.articulation === "accent-open")
-                    && claimedAccentXs.has(n.x))
-                .map(n => n.x)
-        );
+                const note = new VF.StaveNote({
+                    keys: ["c/5"],
+                    duration: baseDuration,
+                    clef: "percussion",
+                    stem_direction: stemUp ? 1 : -1,
+                });
+                if (typeof note.setKeyLine === "function") {
+                    note.setKeyLine(0, lineIndex);
+                }
 
-        renderNotes(svg, notes, y, scale, { accentsOnly: true, suppressedAccentXs });
+                if (noteEvent.articulation === "accent" || noteEvent.articulation === "accent-open") {
+                    const accent = new VF.Articulation("a>");
+                    accent.setPosition(VF.Modifier.Position.ABOVE);
+                    note.addModifier(accent, 0);
+                }
 
-        // Claim all accented x positions for this instrument so lower instruments skip them.
-        notes.forEach(n => {
-            if (n.articulation === "accent" || n.articulation === "accent-open") {
-                claimedAccentXs.add(n.x);
+                if (noteEvent.articulation === "ghost") {
+                    note.setStyle({ fillStyle: "#666", strokeStyle: "#666" });
+                }
+
+                cellNotes[idx] = note;
+
+                if (d > 0) {
+                    const prev = cellNotes[idx - 1];
+                    ties.push(new VF.StaveTie({
+                        first_note: prev,
+                        last_note: note,
+                        first_indices: [0],
+                        last_indices: [0],
+                    }));
+                }
             }
         });
+
+        const voice = new VF.Voice({
+            num_beats: beatsPerBar,
+            beat_value: beatUnit,
+        });
+        voice.setMode(VF.Voice.Mode.SOFT);
+        voice.addTickables(cellNotes);
+
+        if (isTriplet) {
+            for (let i = 0; i < cellNotes.length; i += 3) {
+                const group = cellNotes.slice(i, i + 3);
+                if (group.length === 3) {
+                    tuplets.push(new VF.Tuplet(group));
+                }
+            }
+        }
+
+        voices.push(voice);
+        const beamable = cellNotes.filter((n: any) => {
+            if (typeof n.isRest === "function") return !n.isRest();
+            return !n.isRest;
+        });
+        beams.push(...VF.Beam.generateBeams(beamable));
+
+        if (showLabels) {
+            const label = INSTRUMENT_NAMES[line.instrument] ?? line.instrument;
+            const labelY = stave.getYForLine(lineIndex);
+            context.save();
+            context.setFont("monospace", 12, "");
+            context.fillText(label, 10, labelY + 4);
+            context.restore();
+        }
     });
 
-    renderBarLines(svg, staffTop, staffBottom, maxCellCount, beatsPerBar, subdivisionsPerBeat, cellWidth, startX);
-    renderBracketLines(svg, staffTop, staffBottom, maxCellCount, cellWidth, startX);
+    voices.push(ghostVoice);
 
-    wrapper.appendChild(svg);
+    const formatter = new VF.Formatter();
+    formatter.joinVoices(voices).format(voices, width - startX - endPadding);
+
+    voices.forEach((voice) => voice.draw(context, stave));
+    beams.forEach((beam) => beam.setContext(context).draw());
+    ties.forEach((tie) => tie.setContext(context).draw());
+    tuplets.forEach((tuplet) => tuplet.setContext(context).draw());
+
+    if (notation.hairpinPattern) {
+        const hairpin = parseHairpinPattern(notation.hairpinPattern);
+        if (hairpin && ghostNotes[hairpin.start] && ghostNotes[hairpin.end]) {
+            const type = hairpin.direction === "crescendo"
+                ? VF.StaveHairpin.type.CRESC
+                : VF.StaveHairpin.type.DECRESC;
+            const hp = new VF.StaveHairpin({
+                first_note: ghostNotes[hairpin.start],
+                last_note: ghostNotes[hairpin.end],
+            }, type);
+            hp.setContext(context);
+            hp.setPosition(VF.Modifier.Position.BELOW);
+            hp.draw();
+        }
+    }
+
     container.appendChild(wrapper);
 }
