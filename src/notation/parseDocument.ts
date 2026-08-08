@@ -220,7 +220,6 @@ function parsePositionLane(
         diagnostic(diagnostics, "error", "unknown-instrument", `Unknown instrument "${instrument}".`, lineNumber, 1, instrument);
         return undefined;
     }
-    const clauses = match[2].split(";").map(value => value.trim()).filter(Boolean);
     const lane: ParsedLane = { instrument, voice: voiceFor(instrument), measures: [], subdivisions: [], line: lineNumber };
     const ensureMeasure = (index: number) => {
         while (lane.measures.length <= index) {
@@ -229,14 +228,15 @@ function parsePositionLane(
         }
     };
 
-    clauses.forEach((clause, clauseIndex) => {
-        const modifier = clause.match(/^(open|accent|ghost|normal)\s*:\s*(.*)$/i);
-        const articulationName = modifier?.[1]?.toLowerCase();
-        const body = modifier?.[2] ?? clause;
-        const measureParts = body.split("|");
-        measureParts.forEach((part, measureIndex) => {
-            ensureMeasure(measureIndex);
-            const values = part.split(",").map(value => value.trim()).filter(Boolean);
+    const measureExpressions = match[2].split("|");
+    measureExpressions.forEach((measureExpression, measureIndex) => {
+        ensureMeasure(measureIndex);
+        const clauses = measureExpression.split(";").map(value => value.trim()).filter(Boolean);
+        clauses.forEach(clause => {
+            const modifier = clause.match(/^(open|accent|ghost|normal)\s*:\s*(.*)$/i);
+            const articulationName = modifier?.[1]?.toLowerCase();
+            const body = modifier?.[2] ?? clause;
+            const values = body.split(",").map(value => value.trim()).filter(Boolean);
             values.forEach(value => {
                 const preset = PRESETS[value.toLowerCase()];
                 const ticks = preset
@@ -261,8 +261,14 @@ function parsePositionLane(
                     if (articulationName === "accent") articulation = "accent";
                     if (articulationName === "open") articulation = instrument === "HH" ? "open" : "normal";
                     const existing = lane.measures[measureIndex]?.find(event => event.tick === tick);
-                    if (existing && clauseIndex > 0) {
-                        existing.articulation = articulationName === "open" && existing.articulation === "accent" ? "accent-open" : articulation;
+                    if (existing) {
+                        if (articulationName === "open" && existing.articulation === "accent") {
+                            existing.articulation = "accent-open";
+                        } else if (articulationName === "accent" && existing.articulation === "open") {
+                            existing.articulation = "accent-open";
+                        } else if (articulationName !== undefined) {
+                            existing.articulation = articulation;
+                        }
                         return;
                     }
                     lane.measures[measureIndex]?.push({
@@ -278,10 +284,6 @@ function parsePositionLane(
                 });
             });
         });
-    });
-    lane.measures.forEach((events, index) => {
-        const duration = TICKS_PER_BEAT / (lane.subdivisions[index] ?? 1);
-        events.forEach(event => event.durationTicks = duration);
     });
     return lane;
 }
