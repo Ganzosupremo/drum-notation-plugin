@@ -22,6 +22,38 @@ import * as VexFlow from "vexflow";
 
 type HairpinDirection = "crescendo" | "decrescendo";
 
+function applyNoteheadGlyph(
+    note: any,
+    instrument: string,
+    symbol: string,
+    articulation: string,
+    VF: any
+) {
+    const glyphs = VF.Glyphs;
+    if (!glyphs || !note?.keyProps?.[0]) return;
+
+    let code: string | undefined;
+
+    if (instrument === "HH" || instrument === "RC") {
+        code = (symbol === "o" || articulation === "open" || articulation === "accent-open")
+            ? glyphs.noteheadHalf
+            : glyphs.noteheadXBlack;
+    } else if (instrument === "CC") {
+        code = glyphs.noteheadCircleX;
+    } else if (instrument === "HF") {
+        code = glyphs.noteheadPlusBlack;
+    } else {
+        code = glyphs.noteheadBlack;
+    }
+
+    if (!code) return;
+
+    note.keyProps[0].code = code;
+    if (typeof note.reset === "function") {
+        note.reset();
+    }
+}
+
 function getBaseDuration(
     beatUnit: number,
     subdivisionsPerBeat?: number
@@ -178,6 +210,8 @@ export function renderDrumNotation(
                 if (typeof note.setKeyLine === "function") {
                     note.setKeyLine(0, lineIndex);
                 }
+
+                applyNoteheadGlyph(note, line.instrument, noteEvent.symbol, noteEvent.articulation, VF);
 
                 if (noteEvent.articulation === "accent" || noteEvent.articulation === "accent-open") {
                     const accent = new VF.Articulation("a>");
