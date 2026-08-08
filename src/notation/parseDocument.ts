@@ -12,13 +12,17 @@ import {
     TimeSignature,
 } from "../types";
 import { rhythmDiagnostics } from "./rhythm";
+import {
+    defaultInstrumentPositions,
+    closestInstrument,
+    DrumOrnament,
+    DrumTechnique,
+    instrumentVoice,
+    normalizeInstrument,
+    supportsTechnique,
+} from "./instruments";
 
-const INSTRUMENTS = new Set(["CC", "HH", "RC", "HT", "MT", "SD", "FT", "BD", "HF"]);
-const INSTRUMENT_ALIASES: Record<string, string> = {
-    H: "HH", R: "RC", C: "CC", S: "SD", K: "BD", P: "HF", T1: "HT", T2: "MT", T3: "FT",
-};
-const LOWER_VOICE = new Set(["FT", "BD", "HF"]);
-const HEADER = /^(?:time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution|feel|swing|style|count|labels|grouping)\b/i;
+const HEADER = /^(?:time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution|feel|swing|style|count|labels|grouping|positions)\b/i;
 const QUARTERS = [0];
 const EIGHTHS = [0, 6];
 const SIXTEENTHS = [0, 3, 6, 9];
@@ -47,8 +51,20 @@ function diagnostic(
     column = 1,
     instrument?: string,
     measure?: number,
+    length = 1,
+    suggestion?: string,
+    fixes?: DrumDiagnostic["fixes"],
 ): void {
-    diagnostics.push({ severity, code, message, location: { line, column }, instrument, measure });
+    diagnostics.push({
+        severity,
+        code,
+        message,
+        location: { line, column, endLine: line, endColumn: column + Math.max(1, length), source: "body" },
+        instrument,
+        measure,
+        suggestion,
+        fixes,
+    });
 }
 
 function boolDirective(source: string, key: string): boolean | undefined {
@@ -85,22 +101,80 @@ function groupingDirective(source: string, timeSignature: TimeSignature, diagnos
     return grouping;
 }
 
-function voiceFor(instrument: string): DrumVoice {
-    return LOWER_VOICE.has(instrument) ? "lower" : "upper";
-}
-
-function normalizeInstrument(value: string): string {
-    const normalized = value.toUpperCase();
-    return INSTRUMENT_ALIASES[normalized] ?? normalized;
+function positionsDirective(source: string, diagnostics: DrumDiagnostic[]): Record<string, number> {
+    const positions: Record<string, number> = {};
+    const match = source.match(/^\s*positions\s*(?::|=|\s)\s*([^\r\n]+)$/im);
+    if (!match?.[1]) return positions;
+    const contentOffset = (match.index ?? 0) + match[0].indexOf(match[1]);
+    let searchOffset = contentOffset;
+    match[1].split(",").map(part => part.trim()).filter(Boolean).forEach(part => {
+        const partOffset = source.indexOf(part, searchOffset);
+        searchOffset = Math.max(searchOffset, partOffset + part.length);
+        const prefix = source.slice(0, Math.max(0, partOffset));
+        const line = prefix.split(/\r?\n/).length;
+        const lastBreak = Math.max(prefix.lastIndexOf("\n"), prefix.lastIndexOf("\r"));
+        const column = Math.max(1, partOffset - lastBreak);
+        const assignment = part.match(/^([a-z][a-z0-9-]*)\s*=\s*(-?\d+)$/i);
+        const instrument = assignment?.[1] ? normalizeInstrument(assignment[1]) : undefined;
+        const step = assignment?.[2] ? Number.parseInt(assignment[2], 10) : Number.NaN;
+        if (!assignment || !instrument || !Number.isInteger(step) || step < -10 || step > 10) {
+            diagnostic(diagnostics, "error", "invalid-staff-position", `Invalid staff position "${part}". Use INSTRUMENT=-10…10.`, line, column, instrument, undefined, part.length);
+            return;
+        }
+        positions[instrument] = step;
+    });
+    return positions;
 }
 
 function normalizeBareMeter(source: string): string {
     return source.replace(/^\s*(\d+\s*\/\s*\d+)\s*$/gm, "meter: $1");
 }
 
-function articulationFor(instrument: string, token: string): { symbol: string; articulation: Articulation } | undefined {
+function addSourceOffsets(location: DrumEvent["source"], source: string): void {
+    const starts = [0];
+    for (const match of source.matchAll(/\r?\n/g)) starts.push((match.index ?? 0) + match[0].length);
+    const start = (starts[Math.max(0, location.line - 1)] ?? 0) + Math.max(0, location.column - 1);
+    const endLine = location.endLine ?? location.line;
+    const end = (starts[Math.max(0, endLine - 1)] ?? start) + Math.max(0, (location.endColumn ?? location.column + 1) - 1);
+    location.startOffset = start;
+    location.endOffset = Math.max(start + 1, end);
+    location.endLine = endLine;
+    location.endColumn ??= location.column + 1;
+    location.source ??= "body";
+}
+
+interface ParsedAttack {
+    symbol: string;
+    articulation: Articulation;
+    technique?: DrumTechnique;
+    ornament?: DrumOrnament;
+}
+
+function articulationFor(instrument: string, token: string): ParsedAttack | undefined {
     if (token === "." || token === "-") return undefined;
     if (token === "~") return { symbol: "~", articulation: "normal" };
+    let body = token;
+    let accent = false;
+    let ghost = false;
+    if (body.startsWith(">")) {
+        accent = true;
+        body = body.slice(1);
+    }
+    const ghostMatch = body.match(/^\((.+)\)$/);
+    if (ghostMatch?.[1]) {
+        ghost = true;
+        body = ghostMatch[1];
+    }
+    const special: Record<string, Pick<ParsedAttack, "technique" | "ornament">> = {
+        cs: { technique: "cross-stick" },
+        rs: { technique: "rimshot" },
+        b: { technique: "bell" },
+        f: { ornament: "flam" },
+        d: { ornament: "drag" },
+        rr: { ornament: "roll" },
+    };
+    const feature = special[body.toLowerCase()];
+    if (feature) return { symbol: "o", articulation: ghost ? "ghost" : accent ? "accent" : "normal", ...feature };
     if (/^\([xo]\)$/i.test(token)) return { symbol: token[1]?.toLowerCase() ?? "o", articulation: "ghost" };
     if (/^>[xo]$/i.test(token)) {
         const symbol = token[1]?.toLowerCase() ?? "o";
@@ -149,15 +223,19 @@ function parseGridLane(
 ): ParsedLane | undefined {
     const firstPipe = lineText.indexOf("|");
     if (firstPipe < 0) return undefined;
-    const instrument = lineText.slice(0, firstPipe).trim().toUpperCase();
-    if (!instrument) return undefined;
-    if (!INSTRUMENTS.has(instrument)) {
-        diagnostic(diagnostics, "error", "unknown-instrument", `Unknown instrument "${instrument}".`, lineNumber, 1, instrument);
+    const rawInstrument = lineText.slice(0, firstPipe).trim();
+    if (!rawInstrument) return undefined;
+    const instrument = normalizeInstrument(rawInstrument);
+    if (!instrument) {
+        const closest = closestInstrument(rawInstrument);
+        const range = { line: lineNumber, column: 1, endLine: lineNumber, endColumn: rawInstrument.length + 1, source: "body" as const };
+        diagnostic(diagnostics, "error", "unknown-instrument", `Unknown instrument "${rawInstrument.toUpperCase()}".`, lineNumber, 1, rawInstrument.toUpperCase(), undefined, rawInstrument.length, closest ? `Did you mean ${closest}?` : undefined, closest ? [{ title: "Copy corrected block", replacement: closest, range, applicability: "safe" }] : undefined);
         return undefined;
     }
     const rawMeasures = lineText.slice(firstPipe + 1).split("|");
     if (rawMeasures[rawMeasures.length - 1]?.trim() === "") rawMeasures.pop();
-    const lane: ParsedLane = { instrument, voice: voiceFor(instrument), measures: [], subdivisions: [], line: lineNumber };
+    const lane: ParsedLane = { instrument, voice: instrumentVoice(instrument), measures: [], subdivisions: [], line: lineNumber };
+    let tokenSearchCursor = firstPipe + 1;
 
     rawMeasures.forEach((raw, measureIndex) => {
         const trimmed = raw.trim();
@@ -184,25 +262,40 @@ function parseGridLane(
             }
             tokens = collapsed;
         }
+        const tokenColumns = tokens.map(token => {
+            const found = lineText.indexOf(token, tokenSearchCursor);
+            if (found < 0) return firstPipe + 2;
+            tokenSearchCursor = found + token.length;
+            return found + 1;
+        });
 
         const expected = beats * subdivisions;
         const measureEvents: DrumEvent[] = [];
         let lastEvent: DrumEvent | undefined;
         tokens.forEach((token, cell) => {
+            const tokenColumn = tokenColumns[cell] ?? firstPipe + 2;
             if (token === "~") {
                 if (lastEvent && lastEvent.tick + lastEvent.durationTicks === cell * (TICKS_PER_BEAT / subdivisions)) {
                     lastEvent.durationTicks += TICKS_PER_BEAT / subdivisions;
                     lastEvent.tied = true;
                 } else {
-                    diagnostic(diagnostics, "warning", "orphan-tie", `Tie without a preceding note in ${instrument}, measure ${measureIndex + 1}.`, lineNumber, firstPipe + 2, instrument, measureIndex + 1);
+                    diagnostic(diagnostics, "warning", "orphan-tie", `Tie without a preceding note in ${instrument}, measure ${measureIndex + 1}.`, lineNumber, tokenColumn, instrument, measureIndex + 1, token.length);
                 }
                 return;
             }
             const parsed = articulationFor(instrument, token);
             if (!parsed) {
                 if (token !== "." && token !== "-") {
-                    diagnostic(diagnostics, "error", "invalid-grid-token", `Unknown token "${token}" in ${instrument}.`, lineNumber, firstPipe + 2, instrument, measureIndex + 1);
+                    diagnostic(diagnostics, "error", "invalid-grid-token", `Unknown token "${token}" in ${instrument}.`, lineNumber, tokenColumn, instrument, measureIndex + 1, token.length);
                 }
+                return;
+            }
+            if (parsed.technique && !supportsTechnique(instrument, parsed.technique)) {
+                diagnostic(diagnostics, "error", "unsupported-technique", `${instrument} does not support ${parsed.technique}.`, lineNumber, tokenColumn, instrument, measureIndex + 1, token.length);
+                return;
+            }
+            if (parsed.technique === "rimshot" && parsed.articulation === "ghost") {
+                diagnostic(diagnostics, "error", "conflicting-articulation", "Ghost and rimshot cannot coexist.", lineNumber, tokenColumn, instrument, measureIndex + 1, token.length);
                 return;
             }
             const event: DrumEvent = {
@@ -213,7 +306,9 @@ function parseGridLane(
                 durationTicks: TICKS_PER_BEAT / subdivisions,
                 symbol: parsed.symbol,
                 articulation: parsed.articulation,
-                source: { line: lineNumber, column: firstPipe + 2 },
+                technique: parsed.technique,
+                ornament: parsed.ornament,
+                source: { line: lineNumber, column: tokenColumn, endLine: lineNumber, endColumn: tokenColumn + token.length, source: "body" },
             };
             measureEvents.push(event);
             lastEvent = event;
@@ -256,12 +351,15 @@ function parsePositionLane(
     const match = lineText.match(/^\s*([a-z][a-z0-9]*)\s*:\s*(.+)$/i);
     if (!match?.[1] || !match[2]) return undefined;
     const instrument = normalizeInstrument(match[1]);
-    if (!INSTRUMENTS.has(instrument)) {
-        diagnostic(diagnostics, "error", "unknown-instrument", `Unknown instrument "${instrument}".`, lineNumber, 1, instrument);
+    if (!instrument) {
+        const closest = closestInstrument(match[1]);
+        const range = { line: lineNumber, column: 1, endLine: lineNumber, endColumn: match[1].length + 1, source: "body" as const };
+        diagnostic(diagnostics, "error", "unknown-instrument", `Unknown instrument "${match[1].toUpperCase()}".`, lineNumber, 1, match[1].toUpperCase(), undefined, match[1].length, closest ? `Did you mean ${closest}?` : undefined, closest ? [{ title: "Copy corrected block", replacement: closest, range, applicability: "safe" }] : undefined);
         return undefined;
     }
-    const lane: ParsedLane = { instrument, voice: voiceFor(instrument), measures: [], subdivisions: [], line: lineNumber };
+    const lane: ParsedLane = { instrument, voice: instrumentVoice(instrument), measures: [], subdivisions: [], line: lineNumber };
     const measureExpressions = match[2].split("|");
+    let positionTokenCursor = lineText.indexOf(":") + 1;
     measureExpressions.forEach(rawExpression => {
         let measureExpression = rawExpression.trim();
         let copies = 1;
@@ -298,17 +396,28 @@ function parsePositionLane(
         let measureSubdivision = timeSignature.meterType === "compound" ? 3 : 1;
         const clauses = measureExpression.split(";").map(value => value.trim()).filter(Boolean);
         clauses.forEach(clause => {
-            const modifier = clause.match(/^(open|accent|ghost|normal)\s*:\s*(.*)$/i);
-            const forcedArticulation = modifier?.[1]?.toLowerCase() as "open" | "accent" | "ghost" | "normal" | undefined;
+            const modifier = clause.match(/^(open|accent|ghost|normal|cross-stick|rimshot|bell|flam|drag|roll)\s*:\s*(.*)$/i);
+            const modifierName = modifier?.[1]?.toLowerCase();
+            const forcedArticulation = /^(open|accent|ghost|normal)$/.test(modifierName ?? "")
+                ? modifierName as "open" | "accent" | "ghost" | "normal"
+                : undefined;
+            const forcedTechnique = ({ "cross-stick": "cross-stick", rimshot: "rimshot", bell: "bell" } as Record<string, DrumTechnique>)[modifierName ?? ""];
+            const forcedOrnament = ({ flam: "flam", drag: "drag", roll: "roll" } as Record<string, DrumOrnament>)[modifierName ?? ""];
             const body = modifier?.[2] ?? clause;
             const values = body.match(/\([^)]+\)|[^,\s]+/g) ?? [];
             values.forEach(token => {
+                const tokenIndex = lineText.indexOf(token, positionTokenCursor);
+                const tokenColumn = (tokenIndex >= 0 ? tokenIndex : lineText.indexOf(token)) + 1;
+                positionTokenCursor = Math.max(positionTokenCursor, tokenIndex + token.length);
                 let value = token;
                 let articulationName: Articulation | undefined = forcedArticulation;
+                let technique = forcedTechnique;
+                let ornament = forcedOrnament;
                 const ghost = token.match(/^\((\d+(?:e|&|a)?)\)$/i);
                 const accentOpen = token.match(/^>o(\d+(?:e|&|a)?)$/i);
                 const accent = token.match(/^>(\d+(?:e|&|a)?)$/i);
                 const open = token.match(/^o(\d+(?:e|&|a)?)$/i);
+                const feature = token.match(/^(cs|rs|b|f|d|rr)(\d+(?:e|&|a)?)$/i);
                 if (ghost?.[1]) {
                     value = ghost[1];
                     articulationName = "ghost";
@@ -321,9 +430,22 @@ function parsePositionLane(
                 } else if (open?.[1]) {
                     value = open[1];
                     articulationName = "open";
+                } else if (feature?.[1] && feature[2]) {
+                    value = feature[2];
+                    const featureName = feature[1].toLowerCase();
+                    technique = ({ cs: "cross-stick", rs: "rimshot", b: "bell" } as Record<string, DrumTechnique>)[featureName];
+                    ornament = ({ f: "flam", d: "drag", rr: "roll" } as Record<string, DrumOrnament>)[featureName];
                 }
                 if ((articulationName === "open" || articulationName === "accent-open") && instrument !== "HH") {
-                    diagnostic(diagnostics, "error", "unsupported-articulation", `${instrument} does not support open notation.`, lineNumber, lineText.indexOf(token) + 1, instrument, measureIndex + 1);
+                    diagnostic(diagnostics, "error", "unsupported-articulation", `${instrument} does not support open notation.`, lineNumber, tokenColumn, instrument, measureIndex + 1, token.length);
+                    return;
+                }
+                if (technique && !supportsTechnique(instrument, technique)) {
+                    diagnostic(diagnostics, "error", "unsupported-technique", `${instrument} does not support ${technique}.`, lineNumber, tokenColumn, instrument, measureIndex + 1, token.length, `Use ${technique} on ${technique === "bell" ? "RC" : "SD"}.`);
+                    return;
+                }
+                if (articulationName === "ghost" && technique === "rimshot") {
+                    diagnostic(diagnostics, "error", "conflicting-articulation", `Ghost and rimshot cannot coexist at ${value}.`, lineNumber, tokenColumn, instrument, measureIndex + 1, token.length);
                     return;
                 }
                 const preset = PRESETS[value.toLowerCase()];
@@ -331,7 +453,7 @@ function parsePositionLane(
                     ? Array.from({ length: timeSignature.beatsPerBar }, (_, beat) => preset.map(offset => beat * TICKS_PER_BEAT + offset)).flat()
                     : [positionTick(value, timeSignature)];
                 if (ticks.some(tick => tick === undefined)) {
-                    diagnostic(diagnostics, "error", "invalid-position", `Invalid position "${token}" in ${instrument}.`, lineNumber, lineText.indexOf(token) + 1, instrument, measureIndex + 1);
+                    diagnostic(diagnostics, "error", "invalid-position", `Invalid position "${token}" in ${instrument}.`, lineNumber, tokenColumn, instrument, measureIndex + 1, token.length);
                     return;
                 }
                 const subdivision = preset === TRIPLETS || (timeSignature.meterType === "compound" && /[&a]$/i.test(value))
@@ -348,17 +470,31 @@ function parsePositionLane(
                     const existing = events.find(event => event.tick === tick);
                     if (existing) {
                         const incoming = articulationName;
-                        if (incoming === undefined) return;
+                        if (technique === "rimshot" && existing.articulation === "ghost"
+                            || incoming === "ghost" && existing.technique === "rimshot") {
+                            diagnostic(diagnostics, "error", "conflicting-articulation", `Ghost and rimshot cannot coexist at ${value}.`, lineNumber, tokenColumn, instrument, measureIndex + 1, token.length);
+                            return;
+                        }
                         if (incoming === "normal") {
                             existing.articulation = "normal";
                         } else if ((incoming === "open" && existing.articulation === "accent")
                             || (incoming === "accent" && existing.articulation === "open")) {
                             existing.articulation = "accent-open";
-                        } else if (existing.articulation === "normal" || existing.articulation === incoming
-                            || existing.articulation === "accent-open" && (incoming === "accent" || incoming === "open")) {
+                        } else if (incoming !== undefined && (existing.articulation === "normal" || existing.articulation === incoming
+                            || existing.articulation === "accent-open" && (incoming === "accent" || incoming === "open"))) {
                             existing.articulation = existing.articulation === "normal" ? incoming : existing.articulation;
-                        } else {
-                            diagnostic(diagnostics, "error", "conflicting-articulation", `Conflicting articulations at ${value} in ${instrument}.`, lineNumber, lineText.indexOf(token) + 1, instrument, measureIndex + 1);
+                        } else if (incoming !== undefined) {
+                            diagnostic(diagnostics, "error", "conflicting-articulation", `Conflicting articulations at ${value} in ${instrument}.`, lineNumber, tokenColumn, instrument, measureIndex + 1, token.length);
+                        }
+                        if (technique) {
+                            if (existing.technique && existing.technique !== technique) {
+                                diagnostic(diagnostics, "error", "conflicting-technique", `${existing.technique} and ${technique} cannot coexist at ${value}.`, lineNumber, tokenColumn, instrument, measureIndex + 1, token.length);
+                            } else existing.technique = technique;
+                        }
+                        if (ornament) {
+                            if (existing.ornament && existing.ornament !== ornament) {
+                                diagnostic(diagnostics, "error", "conflicting-ornament", `${existing.ornament} and ${ornament} cannot coexist at ${value}.`, lineNumber, tokenColumn, instrument, measureIndex + 1, token.length);
+                            } else existing.ornament = ornament;
                         }
                         return;
                     }
@@ -370,7 +506,9 @@ function parsePositionLane(
                         durationTicks: TICKS_PER_BEAT / subdivision,
                         symbol: instrument === "HH" || instrument === "RC" || instrument === "CC" ? "x" : "o",
                         articulation,
-                        source: { line: lineNumber, column: lineText.indexOf(token) + 1 },
+                        technique,
+                        ornament,
+                        source: { line: lineNumber, column: tokenColumn, endLine: lineNumber, endColumn: tokenColumn + token.length, source: "body" },
                     });
                 });
             });
@@ -401,8 +539,12 @@ export function parseDrumDocument(source: string, headerLine?: string, defaultBe
     const legacyMeta = parseDrumNotation(normalizedSource, normalizedHeader);
     const timeSignature = legacyMeta.timeSignature ?? buildTimeSignature(legacyMeta.beatsPerBar ?? defaultBeatsPerBar, 4);
     const diagnostics: DrumDiagnostic[] = [];
-    (legacyMeta.warnings ?? []).filter((warning, index, all) => all.indexOf(warning) === index).forEach(warning =>
-        diagnostic(diagnostics, "warning", "header", warning, 1));
+    const headerWarnings = new Set(normalizedHeader ? parseDrumNotation("", normalizedHeader).warnings ?? [] : []);
+    (legacyMeta.warnings ?? []).filter((warning, index, all) => all.indexOf(warning) === index).forEach(warning => {
+        const fromHeader = headerWarnings.has(warning);
+        diagnostic(diagnostics, "warning", "header", warning, 1, 1, undefined, undefined, fromHeader ? normalizedHeader?.length ?? 1 : 1);
+        if (fromHeader) diagnostics[diagnostics.length - 1]!.location.source = "fence-header";
+    });
     const lines = normalizedSource.split(/\r?\n/);
     const contentLines = lines.filter(line => line.trim() && !HEADER.test(line.trim()) && !/^hairpin\s*\|/i.test(line.trim()));
     const positionMode = contentLines.some(line => /^\s*[a-z][a-z0-9]*\s*:/i.test(line));
@@ -458,9 +600,11 @@ export function parseDrumDocument(source: string, headerLine?: string, defaultBe
     if (sourceMode === "legacy") {
         diagnostic(diagnostics, "warning", "legacy-syntax", "Legacy compact syntax was interpreted automatically. Prefer token grid or position syntax for unambiguous notation.", 1);
     }
-    const directiveSource = `${normalizedHeader ?? ""}\n${normalizedSource}`;
+    const directiveSource = [normalizedHeader, normalizedSource].filter((value): value is string => Boolean(value)).join("\n");
     const style = styleDirective(directiveSource);
     const grouping = groupingDirective(directiveSource, timeSignature, diagnostics);
+    const positionOverrides = positionsDirective(directiveSource, diagnostics);
+    const instrumentPositions = { ...defaultInstrumentPositions(), ...positionOverrides };
     const document: DrumDocument = {
         version: 2,
         sourceMode,
@@ -475,6 +619,10 @@ export function parseDrumDocument(source: string, headerLine?: string, defaultBe
         legacySuggestion: sourceMode === "legacy" ? "Add `grid: 8`/`grid: 16`, or migrate to position syntax." : undefined,
         hairpinPattern: legacyMeta.hairpinPattern,
         grouping,
+        instrumentPositions,
+        positionOverrides,
+        sourceText: source,
+        headerText: headerLine,
     };
     const timelineDiagnostics = rhythmDiagnostics(document);
     diagnostics.push(...timelineDiagnostics);
@@ -482,5 +630,14 @@ export function parseDrumDocument(source: string, headerLine?: string, defaultBe
         const measure = item.measure ? measures[item.measure - 1] : undefined;
         if (measure) measure.valid = false;
     });
+    const diagnosticKeys = new Set<string>();
+    for (let index = diagnostics.length - 1; index >= 0; index--) {
+        const item = diagnostics[index]!;
+        const key = `${item.code}:${item.location.line}:${item.location.column}:${item.instrument ?? ""}:${item.measure ?? ""}`;
+        if (diagnosticKeys.has(key)) diagnostics.splice(index, 1);
+        else diagnosticKeys.add(key);
+    }
+    measures.forEach(measure => measure.events.forEach(event => addSourceOffsets(event.source, source)));
+    diagnostics.forEach(item => addSourceOffsets(item.location, item.location.source === "fence-header" ? headerLine ?? "" : source));
     return document;
 }

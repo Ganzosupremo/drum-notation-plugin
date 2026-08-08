@@ -33,6 +33,22 @@ K: 1 2& 3 | % x2
 
 The renderer derives a complete rhythm for each voice. Position events last until the next onset in that voice or the end of the current pulse; leading and empty-pulse rests are written automatically. Upper and lower voices remain independent.
 
+## Extended kit and techniques
+
+China (`CH`) and splash (`SP`) are first-class cymbals. Techniques and ornaments can be written compactly:
+
+```drums
+4/4
+S: cs1 rs2 f3 d3a rr4
+R: 8ths b1 b3
+CH: 1 3
+SP: 2& 4&
+```
+
+`cs`, `rs`, and `b` mean cross-stick, rimshot, and ride bell. `f`, `d`, and `rr` mean flam, drag, and roll. Long clauses such as `cross-stick: 1`, `bell: 3`, and `flam: 2` are equivalent. Repeat a position to combine features, for example `S: >2 f2` for an accented flam.
+
+Grid mode accepts `cs`, `rs`, `b`, `f`, `d`, and `rr` as single-cell tokens. Techniques are validated against the instrument: cross-stick/rimshot belong to SD and bell belongs to RC.
+
 ## Token grid
 
 Use a grid when every subdivision needs to be visible in the source:
@@ -61,6 +77,7 @@ count: true        # show 1 e & a labels
 labels: true       # show the instrument legend
 feel: swing
 grouping: 3+2      # optional beam grouping; values must add up to the meter numerator
+positions: CH=-7, SP=-6, SD=-1  # half-space steps from the middle line
 ```
 
 Regular simple meters group beams by pulse, 5/4 defaults to `3+2`, and compound meters use groups of three eighth-note units. Primary beams may cross short internal rests, while larger rests and grouping boundaries break them. Simple-meter triplets show a `3`; compound pulses are treated as natural ternary groups.
@@ -81,6 +98,8 @@ BD |o-------o-------|
 
 When all hits fall on alternating cells, version 2 interprets this convention as eighth notes instead of sixteenths. A non-blocking migration notice recommends adding an explicit grid or converting to position syntax. The plugin never rewrites vault notes.
 
+Diagnostics appear inside the rendered block with the exact source token highlighted. Deterministic corrections can be copied as a corrected block, and legacy blocks include a **Copy v2 syntax** action. The plugin never changes the note automatically.
+
 ## Development and release
 
 ```bash
@@ -96,7 +115,5 @@ Playback, MIDI, visual editing, and image/PDF export are outside the current sco
 
 ## Future improvements
 
-- Cross-stick, rimshot, cymbal bell, china, splash, flams, drags, and rolls.
-- Localized diagnostics with exact source highlighting and copyable migrations.
 - Removal of the compatibility renderer after the legacy transition.
 - Browser-based visual regression tests for glyphs, clipping, themes, and scale.

@@ -24,6 +24,31 @@ BD: 1, 2&, 3
 
 Expected: HH and SD events at the same tick share an upper stem; BD uses the lower voice. Clef and 4/4 are visible, counting is hidden.
 
+## Extended kit, techniques and ornaments
+
+```drums
+4/4
+S: cs1 rs2 f3 d3a rr4
+R: 8ths b1 b3
+CH: 1 3
+SP: 2& 4&
+```
+
+Expected: cross-stick uses an X head, rimshot has its slash, ride bells use diamond heads, flam has one grace note, drag has two, and the roll has three tremolo strokes. China and splash remain separate cymbal voices without clipping.
+
+## Configurable staff positions
+
+```drums
+4/4
+positions: CH=-9, SP=-7, SD=0, BD=4
+CH: 1 3
+SP: 2 4
+S: 2 4
+K: 1 3
+```
+
+Expected: the block overrides global positions, ledger lines remain local, and the viewBox expands to contain the relocated instruments.
+
 ## Voice rhythm and conventional rests
 
 ```drums
@@ -105,6 +130,16 @@ SD | . . o . o . . . | . . o . . . o . |
 
 Expected: a precise length warning for the first HH measure while valid events and the second measure still render.
 
+## In-block source diagnostics
+
+```drums
+4/4
+S: cs1 rs1 2 4
+H: b1
+```
+
+Expected: the rendered block highlights `rs1` as a technique conflict and `b1` as unsupported on HH. The affected measure is tinted while the remaining attacks still render.
+
 ## Legacy migration
 
 ```drums
@@ -113,7 +148,7 @@ SD |----o-------o---|
 BD |o-------o-------|
 ```
 
-Expected: rendered as eighth notes with one migration warning, not as a sixteenth grid.
+Expected: rendered as eighth notes with one migration warning, not as a sixteenth grid. Expanding the warning shows the original source and a **Copy v2 syntax** button.
 
 ## Theme and scaling
 

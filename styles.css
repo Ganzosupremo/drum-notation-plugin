@@ -241,6 +241,44 @@
     background: var(--background-secondary);
 }
 
+.drum-diagnostic-summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.drum-diagnostic-message,
+.drum-diagnostic-suggestion {
+    margin-top: 5px;
+    color: var(--text-normal);
+}
+
+.drum-diagnostic-frame {
+    overflow-x: auto;
+    margin: 6px 0;
+    padding: 6px 8px;
+    border-radius: var(--radius-s);
+    background: var(--background-primary);
+    color: var(--text-normal);
+    white-space: pre;
+}
+
+.drum-diagnostic-highlight {
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--text-error) 24%, transparent);
+    color: inherit;
+    text-decoration: underline wavy var(--text-error);
+    text-underline-offset: 3px;
+}
+
+.drum-diagnostic-copy {
+    margin-top: 5px;
+    padding: 3px 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--button-radius);
+    background: var(--interactive-normal);
+    color: var(--text-normal);
+}
+
 .drum-diagnostic-error {
     border-inline-start-color: var(--text-error);
     color: var(--text-error);
@@ -280,6 +318,25 @@
 
 .drum-glyph-ghost {
     opacity: 0.48;
+}
+
+.drum-rimshot-mark,
+.drum-roll-stroke,
+.drum-grace-stem,
+.drum-grace-slash {
+    stroke: var(--text-normal);
+    stroke-width: calc(1.5px * var(--drum-notation-scale, 1));
+    stroke-linecap: round;
+}
+
+.drum-grace-note {
+    font-size: calc(25px * var(--drum-notation-scale, 1));
+}
+
+.drum-grace-slur {
+    fill: none;
+    stroke: var(--text-normal);
+    stroke-width: calc(1.1px * var(--drum-notation-scale, 1));
 }
 
 .drum-invalid-measure {

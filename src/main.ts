@@ -25,6 +25,10 @@ export default class DrumNotationPlugin extends Plugin {
     async onload(): Promise<void> {
         const saved = await this.loadData() as Partial<DrumNotationSettings> | null;
         this.settings = Object.assign({}, DEFAULT_SETTINGS, saved ?? {});
+        this.settings.instrumentPositions = {
+            ...DEFAULT_SETTINGS.instrumentPositions,
+            ...(saved?.instrumentPositions ?? {}),
+        };
         this.addSettingTab(new DrumNotationSettingTab(this.app, this));
 
         this.registerMarkdownCodeBlockProcessor("drums", (source, el, ctx) => {
@@ -56,6 +60,7 @@ export default class DrumNotationPlugin extends Plugin {
             scale: this.settings.notationScale / 100,
             showLabels: this.settings.showInstrumentLabels,
             showCount: this.settings.showCount,
+            instrumentPositions: this.settings.instrumentPositions,
         };
     }
 

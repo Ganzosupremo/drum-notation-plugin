@@ -34,6 +34,15 @@ function atomExtent(draft: ColumnDraft, atom: RhythmAtom, scale: number): void {
     const ghost = atom.events.some(event => event.articulation === "ghost");
     const side = (ghost ? 12 : 7) * scale;
     includeExtent(draft, side, side, { left: -side, right: side, top: -8 * scale, bottom: 8 * scale, kind: "note" });
+    const graceLeft = atom.events.some(event => event.ornament === "drag")
+        ? 29 * scale
+        : atom.events.some(event => event.ornament === "flam")
+            ? 21 * scale
+            : side;
+    if (graceLeft > side) includeExtent(draft, graceLeft, side, { left: -graceLeft, right: side, top: -26 * scale, bottom: 16 * scale, kind: "articulation" });
+    if (atom.events.some(event => event.ornament === "roll")) {
+        includeExtent(draft, side, 11 * scale, { left: -7 * scale, right: 11 * scale, top: -25 * scale, bottom: 25 * scale, kind: "articulation" });
+    }
     if (atom.notation.dots > 0) {
         const right = (9 + atom.notation.dots * 8) * scale;
         includeExtent(draft, side, right, { left: 7 * scale, right, top: -5 * scale, bottom: 5 * scale, kind: "dot" });

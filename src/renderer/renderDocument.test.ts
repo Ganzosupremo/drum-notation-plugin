@@ -22,6 +22,7 @@ class MockElement {
     constructor(readonly tagName: string) {}
 
     setAttribute(name: string, value: string) { this.attributes.set(name, value); }
+    addEventListener() { /* event wiring is covered structurally in this DOM mock */ }
     appendChild(child: MockElement) { child.parent = this; this.children.push(child); return child; }
     createDiv() { return this.appendChild(new MockElement("div")); }
     replaceChildren() { this.children.splice(0); }
@@ -170,6 +171,52 @@ describe("responsive document renderer", () => {
         const documentModel = parseDrumDocument("meter: 4/4\ngrid: 16\nHH | x ~ . .  . . . .  . . . .  . . . . |");
         const rendered = renderDrumDocument(documentModel, container as unknown as HTMLElement);
         assert.equal(descendants(container).filter(element => element.classList.values.has("drum-tie")).length, 1);
+        rendered.destroy();
+    });
+
+    test("renders techniques, grace ornaments, rolls and the expanded cymbal kit", () => {
+        const container = new MockElement("div");
+        const model = parseDrumDocument("4/4\nS: cs1 rs2 f3 d3a rr4\nR: b1\nCH: 2&\nSP: 4&");
+        const rendered = renderDrumDocument(model, container as unknown as HTMLElement);
+        const elements = descendants(container);
+        assert.ok(elements.some(element => element.attributes.get("data-technique") === "cross-stick"));
+        assert.ok(elements.some(element => element.attributes.get("data-technique") === "rimshot"));
+        assert.ok(elements.some(element => element.attributes.get("data-technique") === "bell"));
+        assert.equal(elements.filter(element => element.classList.values.has("drum-grace-note")).length, 3);
+        assert.equal(elements.filter(element => element.classList.values.has("drum-roll-stroke")).length, 3);
+        assert.ok(elements.some(element => element.attributes.get("data-instrument") === "CH"));
+        assert.ok(elements.some(element => element.attributes.get("data-instrument") === "SP"));
+        rendered.destroy();
+    });
+
+    test("shows the exact failing source token inside the rendered block", () => {
+        const container = new MockElement("div");
+        const model = parseDrumDocument("4/4\nS: cs1 rs1 2 4");
+        const rendered = renderDrumDocument(model, container as unknown as HTMLElement);
+        const elements = descendants(container);
+        const highlight = elements.find(element => element.classList.values.has("drum-diagnostic-highlight"));
+        assert.equal(highlight?.textContent, "rs1");
+        assert.ok(elements.some(element => element.classList.values.has("drum-invalid-measure")));
+        rendered.destroy();
+    });
+
+    test("applies block staff-position overrides to note coordinates", () => {
+        const defaultContainer = new MockElement("div");
+        const customContainer = new MockElement("div");
+        const normal = renderDrumDocument(parseDrumDocument("4/4\nCH: 1"), defaultContainer as unknown as HTMLElement);
+        const custom = renderDrumDocument(parseDrumDocument("4/4\npositions: CH=-9\nCH: 1"), customContainer as unknown as HTMLElement);
+        const y = (container: MockElement) => Number(descendants(container).find(element => element.attributes.get("data-instrument") === "CH")?.attributes.get("y"));
+        assert.ok(y(customContainer) < y(defaultContainer));
+        normal.destroy();
+        custom.destroy();
+    });
+
+    test("offers one copyable v2 migration inside a legacy diagnostic", () => {
+        const container = new MockElement("div");
+        const model = parseDrumDocument("HH |x-x-x-x-x-x-x-x-|\nSD |----o-------o---|\nBD |o-------o-------|");
+        const rendered = renderDrumDocument(model, container as unknown as HTMLElement);
+        const buttons = descendants(container).filter(element => element.tagName === "button" && element.textContent === "Copy v2 syntax");
+        assert.equal(buttons.length, 1);
         rendered.destroy();
     });
 });

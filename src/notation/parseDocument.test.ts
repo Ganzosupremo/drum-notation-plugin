@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { parseDrumDocument } from "./parseDocument";
 import { buildMeasureChords } from "../renderer/renderDocument";
+import { serializeCompactDocument } from "./serializeCompact";
 
 describe("drum document v2 position syntax", () => {
     test("normalizes compact syntax to the same musical events as long syntax", () => {
@@ -81,6 +82,62 @@ describe("drum document v2 position syntax", () => {
     test("reports contradictory compact articulations once", () => {
         const document = parseDrumDocument("4/4\nH: o1 (1)");
         assert.equal(document.diagnostics.filter(item => item.code === "conflicting-articulation").length, 1);
+    });
+
+    test("parses the extended kit, techniques and ornaments in compact and long syntax", () => {
+        const compact = parseDrumDocument("4/4\nS: cs1 rs2 f3 d3a rr4\nR: 8ths b1 b3\nCH: 1 3\nSP: 2& 4&");
+        const events = compact.measures[0]?.events ?? [];
+        assert.equal(events.find(event => event.instrument === "SD" && event.tick === 0)?.technique, "cross-stick");
+        assert.equal(events.find(event => event.instrument === "SD" && event.tick === 12)?.technique, "rimshot");
+        assert.equal(events.find(event => event.instrument === "SD" && event.tick === 24)?.ornament, "flam");
+        assert.equal(events.find(event => event.instrument === "SD" && event.tick === 33)?.ornament, "drag");
+        assert.equal(events.find(event => event.instrument === "SD" && event.tick === 36)?.ornament, "roll");
+        assert.equal(events.find(event => event.instrument === "RC" && event.tick === 0)?.technique, "bell");
+        assert.ok(events.some(event => event.instrument === "CH"));
+        assert.ok(events.some(event => event.instrument === "SP"));
+
+        const long = parseDrumDocument("4/4\nSD: cross-stick: 1; rimshot: 2; flam: 3; drag: 3a; roll: 4\nRC: bell: 1 3");
+        assert.deepEqual(
+            long.measures[0]?.events.map(event => [event.instrument, event.tick, event.technique, event.ornament]),
+            events.filter(event => event.instrument === "SD" || event.instrument === "RC")
+                .filter(event => event.instrument !== "RC" || event.tick === 0 || event.tick === 24)
+                .map(event => [event.instrument, event.tick, event.technique, event.ornament]),
+        );
+    });
+
+    test("validates technique capabilities and retains an exact range for repeated tokens", () => {
+        const document = parseDrumDocument("4/4\nS: cs1 rs1 2 2\nH: b1");
+        const conflict = document.diagnostics.find(item => item.code === "conflicting-technique");
+        assert.equal(conflict?.location.column, 8);
+        assert.equal(conflict?.location.endColumn, 11);
+        assert.equal(conflict?.location.startOffset, 11);
+        assert.equal(document.diagnostics.filter(item => item.code === "conflicting-technique").length, 1);
+        assert.equal(document.diagnostics.filter(item => item.code === "unsupported-technique").length, 1);
+    });
+
+    test("supports extended grid tokens and configurable staff positions", () => {
+        const document = parseDrumDocument("4/4\npositions: CH=-9, SD=0\ngrid: 8\nSD | cs . rs . f . rr . |\nRC | b . x . b . x . |");
+        assert.equal(document.instrumentPositions.CH, -9);
+        assert.equal(document.instrumentPositions.SD, 0);
+        assert.deepEqual(document.measures[0]?.events.filter(event => event.instrument === "SD").map(event => [event.technique, event.ornament]), [
+            ["cross-stick", undefined], ["rimshot", undefined], [undefined, "flam"], [undefined, "roll"],
+        ]);
+    });
+
+    test("serializes a legacy groove to parseable compact v2 syntax", () => {
+        const legacy = parseDrumDocument("HH |x-x-x-x-x-x-x-x-|\nSD |----o-------o---|\nBD |o-------o-------|");
+        const migrated = parseDrumDocument(serializeCompactDocument(legacy));
+        const onsets = (document: typeof legacy) => document.measures.map(measure => measure.events.map(event => [event.instrument, event.tick, event.articulation]));
+        assert.deepEqual(onsets(migrated), onsets(legacy));
+        assert.equal(migrated.sourceMode, "positions");
+    });
+
+    test("offers a safe copyable correction for a nearby instrument name", () => {
+        const document = parseDrumDocument("4/4\nHS: 1 2");
+        const diagnostic = document.diagnostics.find(item => item.code === "unknown-instrument");
+        assert.equal(diagnostic?.suggestion, "Did you mean HH?");
+        assert.equal(diagnostic?.fixes?.[0]?.replacement, "HH");
+        assert.equal(diagnostic?.fixes?.[0]?.range.endColumn, 3);
     });
 
     test("parses presets, positions and articulations", () => {
@@ -177,6 +234,13 @@ describe("drum document v2 grid and legacy syntax", () => {
     test("deduplicates malformed header diagnostics", () => {
         const document = parseDrumDocument("time: nope\nHH |x---|");
         assert.equal(document.diagnostics.filter(item => item.code === "header").length, 1);
+    });
+
+    test("distinguishes diagnostics originating in the fence header", () => {
+        const document = parseDrumDocument("H: 1 3", "time nope");
+        const diagnostic = document.diagnostics.find(item => item.code === "header");
+        assert.equal(diagnostic?.location.source, "fence-header");
+        assert.equal(diagnostic?.location.endColumn, 10);
     });
 });
 

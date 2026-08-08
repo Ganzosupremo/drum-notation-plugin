@@ -63,6 +63,18 @@ export type NotationStyle = "standard" | "compact" | "practice";
 export interface SourceLocation {
     line: number;
     column: number;
+    endLine?: number;
+    endColumn?: number;
+    startOffset?: number;
+    endOffset?: number;
+    source?: "body" | "fence-header";
+}
+
+export interface DiagnosticFix {
+    title: string;
+    replacement: string;
+    range: SourceLocation;
+    applicability: "safe" | "suggestion";
 }
 
 export interface DrumDiagnostic {
@@ -72,6 +84,8 @@ export interface DrumDiagnostic {
     location: SourceLocation;
     instrument?: string;
     measure?: number;
+    suggestion?: string;
+    fixes?: DiagnosticFix[];
 }
 
 export interface DrumEvent {
@@ -82,6 +96,8 @@ export interface DrumEvent {
     durationTicks: number;
     symbol: string;
     articulation: Articulation;
+    technique?: "cross-stick" | "rimshot" | "bell";
+    ornament?: "flam" | "drag" | "roll";
     source: SourceLocation;
     tied?: boolean;
 }
@@ -191,4 +207,8 @@ export interface DrumDocument {
     legacySuggestion?: string;
     hairpinPattern?: string;
     grouping: number[];
+    instrumentPositions: Record<string, number>;
+    positionOverrides: Record<string, number>;
+    sourceText: string;
+    headerText?: string;
 }
