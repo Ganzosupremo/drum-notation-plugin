@@ -2,6 +2,17 @@
 
 Paste these blocks into Obsidian and verify them in Live Preview and Reading View.
 
+## Compact syntax and repeats
+
+```drums
+4/4
+R: 8ths >1 >3 x2
+S: 2 4 (3a) | %
+K: 1 2& 3 | %
+```
+
+Expected: the bare meter and aliases are accepted, the ride accents and snare ghost render in both measures, and `%`/`x2` produce the same repeated groove without warnings.
+
 ## Position syntax and shared stems
 
 ```drums
@@ -12,6 +23,29 @@ BD: 1, 2&, 3
 ```
 
 Expected: HH and SD events at the same tick share an upper stem; BD uses the lower voice. Clef and 4/4 are visible, counting is hidden.
+
+## Voice rhythm and conventional rests
+
+```drums
+meter: 4/4
+RC: eighths; accent: 1, 3 | eighths
+SD: 2, 4; ghost: 3a | 2, 4; ghost: 2a, 3a
+BD: 1, 2&, 3 | 1, 2&, 3, 3a
+```
+
+Expected: only the first measure has ride accents; ghost notes remain in their own measure. The lower voice shows a quarter on beat 1, an eighth rest plus offbeat kick on beat 2, and does not inherit the `3a` duration for earlier notes.
+
+## Explicit grouping and beam rests
+
+```drums
+meter: 5/4
+grouping: 2+3
+HH: eighths
+SD: 2, 4
+BD: 1, 3, 5
+```
+
+Expected: beams do not cross the `2+3` boundary. Short internal rests may sit beneath a continuous primary beam; stems and secondary hooks remain local.
 
 ## Sixteenth token grid
 
@@ -24,7 +58,7 @@ SD | . . . .  o . . .  . . . .  >o . (o) . |
 BD | o . . .  . . o .  o . . .  . o . . |
 ```
 
-Expected: `1 e & a` is visible, sixteenths receive secondary beams, the open HH has a circle, and accents/ghosts remain visible.
+Expected: `1 e & a` is visible, dense attacks receive secondary beams, isolated flags use music glyphs, the open HH has a circle, and accents/ghosts remain visible. Empty cells do not create a forest of rests.
 
 ## Compound meter
 
@@ -47,6 +81,18 @@ BD: 1, 3 | 1, 3& | 1, 3 | 1, 2&, 3
 ```
 
 Expected: one system on a wide desktop when space permits, fewer measures per system as the pane narrows, and one per system on mobile.
+
+## Dense adaptive spacing
+
+```drums
+4/4
+style: practice
+H: 16ths o4& >1 >2 >3 >4
+S: (1e) (1a) 2 (2a) (3e) 4 (4a)
+K: 1 1a 2& 3 3a 4&
+```
+
+Expected: all voices and count labels align in shared columns; ghost parentheses, flags, dots, accents, and the open marker do not collide. In a narrow pane the measure keeps its natural width and the block scrolls horizontally.
 
 ## Partial-error rendering
 

@@ -1,4 +1,17 @@
-import { DrumDocument, DrumEvent, DrumMeasure, DrumVoice, TICKS_PER_BEAT } from "../types";
+import {
+    DrumDocument,
+    DrumEvent,
+    DrumMeasure,
+    DrumVoice,
+    MeasureEngravingLayout,
+    RhythmAtom,
+    RhythmBaseValue,
+    RhythmBeamGroup,
+    TICKS_PER_BEAT,
+    VoiceTimeline,
+} from "../types";
+import { buildEngravingSystems } from "../notation/engravingLayout";
+import { buildVoiceTimeline } from "../notation/rhythm";
 import { GLYPHS } from "./smufl";
 import { createSVGElement } from "./svgHelper";
 import { STAFF_OFFSET } from "./staffPositions";
@@ -41,6 +54,14 @@ function svgLine(svg: SVGSVGElement, x1: number, y1: number, x2: number, y2: num
     return line;
 }
 
+function svgPath(svg: SVGSVGElement, pathData: string, className: string): SVGPathElement {
+    const path = createSVGElement("path");
+    path.setAttribute("d", pathData);
+    path.classList.add(className);
+    svg.appendChild(path);
+    return path;
+}
+
 function eventY(event: DrumEvent): number {
     return STAFF_MID_Y + (STAFF_OFFSET[event.instrument] ?? 0);
 }
@@ -65,7 +86,7 @@ function renderClefAndMeter(svg: SVGSVGElement, x: number, document: DrumDocumen
     svgText(svg, document.timeSignature.beatUnit.toString(), x + 25, STAFF_MID_Y + 14, "drum-time-signature");
 }
 
-function renderNotehead(svg: SVGSVGElement, event: DrumEvent, x: number, scale: number, decorationIndex: number): void {
+function renderNotehead(svg: SVGSVGElement, event: DrumEvent, x: number, scale: number, decorationIndex: number, stemTip?: number): void {
     const y = eventY(event);
     if (event.instrument === "CC" || event.instrument === "HF") {
         svgLine(svg, x - 9 * scale, y, x + 9 * scale, y, "drum-ledger-line");
@@ -80,7 +101,9 @@ function renderNotehead(svg: SVGSVGElement, event: DrumEvent, x: number, scale: 
     if (event.articulation === "open" || event.articulation === "accent-open") {
         const circle = createSVGElement("circle");
         circle.setAttribute("cx", x.toString());
-        const markerY = event.voice === "upper" ? UPPER_BEAM_Y - 9 * scale : LOWER_BEAM_Y + 9 * scale;
+        const markerY = event.voice === "upper"
+            ? (stemTip ?? UPPER_BEAM_Y) - (9 + decorationIndex * 6) * scale
+            : (stemTip ?? LOWER_BEAM_Y) + (9 + decorationIndex * 6) * scale;
         circle.setAttribute("cy", markerY.toString());
         circle.setAttribute("r", (3.5 * scale).toString());
         circle.classList.add("drum-open-marker");
@@ -89,8 +112,8 @@ function renderNotehead(svg: SVGSVGElement, event: DrumEvent, x: number, scale: 
     if (event.articulation === "accent" || event.articulation === "accent-open") {
         const openOffset = event.articulation === "accent-open" ? 8 : 0;
         const accentY = event.voice === "upper"
-            ? UPPER_BEAM_Y - (9 + openOffset + decorationIndex * 7) * scale
-            : LOWER_BEAM_Y + (13 + openOffset + decorationIndex * 7) * scale;
+            ? (stemTip ?? UPPER_BEAM_Y) - (9 + openOffset + decorationIndex * 7) * scale
+            : (stemTip ?? LOWER_BEAM_Y) + (13 + openOffset + decorationIndex * 7) * scale;
         const accent = svgText(svg, GLYPHS.articAccentAbove, x, accentY, "drum-glyph-accent");
         accent.classList.add("drum-glyph");
         accent.setAttribute("data-instrument", event.instrument);
@@ -123,56 +146,188 @@ export function buildMeasureChords(measure: DrumMeasure, voice: DrumVoice, left:
     }));
 }
 
-function renderFlag(svg: SVGSVGElement, chord: Chord, stemEnd: number, scale: number): void {
-    if (chord.duration > 6) return;
-    const direction = chord.voice === "upper" ? 1 : -1;
-    svgLine(svg, chord.x, stemEnd, chord.x + 9 * scale, stemEnd + direction * 5 * scale, "drum-flag");
-    if (chord.duration <= 3) {
-        svgLine(svg, chord.x, stemEnd + direction * 5 * scale, chord.x + 9 * scale, stemEnd + direction * 10 * scale, "drum-flag");
+function atomX(atom: RhythmAtom, layout: MeasureEngravingLayout): number {
+    return layout.xAtTick(atom.tick);
+}
+
+function renderFlag(svg: SVGSVGElement, atom: RhythmAtom, x: number, stemEnd: number): void {
+    const level = Math.min(3, atom.notation.beamLevel);
+    if (level === 0) return;
+    const up = atom.voice === "upper";
+    const glyph = level === 1
+        ? up ? GLYPHS.flag8thUp : GLYPHS.flag8thDown
+        : level === 2
+            ? up ? GLYPHS.flag16thUp : GLYPHS.flag16thDown
+            : up ? GLYPHS.flag32ndUp : GLYPHS.flag32ndDown;
+    const flag = svgText(svg, glyph, x, stemEnd, "drum-glyph");
+    flag.classList.add("drum-flag-glyph");
+    flag.setAttribute("data-beam-level", level.toString());
+}
+
+function restGlyph(value: RhythmBaseValue): string {
+    if (value === "whole") return GLYPHS.restWhole;
+    if (value === "half") return GLYPHS.restHalf;
+    if (value === "eighth") return GLYPHS.rest8th;
+    if (value === "sixteenth") return GLYPHS.rest16th;
+    if (value === "thirty-second") return GLYPHS.rest32nd;
+    return GLYPHS.restQuarter;
+}
+
+function renderDots(svg: SVGSVGElement, atom: RhythmAtom, x: number, y: number, scale: number): void {
+    for (let index = 0; index < atom.notation.dots; index++) {
+        svgText(svg, GLYPHS.augmentationDot, x + (9 + index * 5) * scale, y, "drum-glyph").classList.add("drum-rhythm-dot");
     }
 }
 
-function renderVoice(svg: SVGSVGElement, measure: DrumMeasure, voice: DrumVoice, left: number, width: number, scale: number): void {
-    const chords = buildMeasureChords(measure, voice, left, width);
-    const beamed = new Set<Chord>();
-    const beamY = voice === "upper" ? UPPER_BEAM_Y : LOWER_BEAM_Y;
-    for (let beat = 0; beat < measure.beats; beat++) {
-        const group = chords.filter(chord => chord.tick >= beat * TICKS_PER_BEAT
-            && chord.tick < (beat + 1) * TICKS_PER_BEAT
-            && chord.duration <= 6);
-        if (group.length < 2) continue;
-        const first = group[0];
-        const last = group[group.length - 1];
-        if (!first || !last) continue;
-        svgLine(svg, first.x, beamY, last.x, beamY, "drum-beam");
-        const sixteenths = group.filter(chord => chord.duration <= 3);
-        for (let index = 0; index < sixteenths.length - 1; index++) {
-            const current = sixteenths[index];
-            const next = sixteenths[index + 1];
-            if (!current || !next || next.tick - current.tick > 3) continue;
-            const secondaryY = beamY + (voice === "upper" ? 5 : -5) * scale;
-            svgLine(svg, current.x, secondaryY, next.x, secondaryY, "drum-beam");
-        }
-        group.forEach(chord => beamed.add(chord));
-    }
+function renderRest(svg: SVGSVGElement, atom: RhythmAtom, x: number, scale: number, collides: boolean): void {
+    const adjustedX = x + (collides ? (atom.voice === "upper" ? -5 : 5) * scale : 0);
+    const y = STAFF_MID_Y + (atom.voice === "upper" ? -10 : 17) * scale;
+    const rest = svgText(svg, restGlyph(atom.notation.base), adjustedX, y, "drum-glyph");
+    rest.classList.add("drum-rest");
+    rest.setAttribute("data-voice", atom.voice);
+    renderDots(svg, atom, adjustedX, y, scale);
+}
 
-    chords.forEach(chord => {
-        chord.events.forEach((event, index) => {
-            renderNotehead(svg, event, chord.x, scale, index);
+interface BeamGeometry {
+    group: RhythmBeamGroup;
+    noteIndexes: number[];
+    startX: number;
+    endX: number;
+    startY: number;
+    endY: number;
+}
+
+function beamYAt(geometry: BeamGeometry, x: number): number {
+    if (geometry.endX === geometry.startX) return geometry.startY;
+    return geometry.startY + (x - geometry.startX) / (geometry.endX - geometry.startX) * (geometry.endY - geometry.startY);
+}
+
+function beamGeometry(
+    timeline: VoiceTimeline,
+    layout: MeasureEngravingLayout,
+): BeamGeometry[] {
+    return timeline.beamGroups.map(group => {
+        const noteIndexes = group.atomIndexes.filter(index => timeline.atoms[index]?.kind === "chord" && !timeline.atoms[index]?.continuation);
+        const first = timeline.atoms[noteIndexes[0] ?? -1];
+        const last = timeline.atoms[noteIndexes[noteIndexes.length - 1] ?? -1];
+        if (!first || !last) return undefined;
+        const startX = atomX(first, layout);
+        const endX = atomX(last, layout);
+        const firstYs = first.events.map(eventY);
+        const lastYs = last.events.map(eventY);
+        const firstReference = timeline.voice === "upper" ? Math.min(...firstYs) : Math.max(...firstYs);
+        const lastReference = timeline.voice === "upper" ? Math.min(...lastYs) : Math.max(...lastYs);
+        const delta = Math.max(-STAFF_S, Math.min(STAFF_S, (lastReference - firstReference) * 0.35));
+        const center = timeline.voice === "upper" ? UPPER_BEAM_Y : LOWER_BEAM_Y;
+        return { group, noteIndexes, startX, endX, startY: center - delta / 2, endY: center + delta / 2 };
+    }).filter((value): value is BeamGeometry => value !== undefined);
+}
+
+function drawBeams(
+    svg: SVGSVGElement,
+    timeline: VoiceTimeline,
+    layout: MeasureEngravingLayout,
+    scale: number,
+    geometries: BeamGeometry[],
+): Map<number, BeamGeometry> {
+    const membership = new Map<number, BeamGeometry>();
+    geometries.forEach(geometry => {
+        svgLine(svg, geometry.startX, geometry.startY, geometry.endX, geometry.endY, "drum-beam");
+        geometry.noteIndexes.forEach(index => membership.set(index, geometry));
+        const ordered = geometry.group.atomIndexes;
+        const maxLevel = Math.max(...geometry.noteIndexes.map(index => timeline.atoms[index]?.notation.beamLevel ?? 0));
+        for (let level = 2; level <= maxLevel; level++) {
+            geometry.noteIndexes.forEach((atomIndex, notePosition) => {
+                const atom = timeline.atoms[atomIndex];
+                if (!atom || atom.notation.beamLevel < level) return;
+                const orderedPosition = ordered.indexOf(atomIndex);
+                const nextIndex = ordered[orderedPosition + 1];
+                const next = nextIndex === undefined ? undefined : timeline.atoms[nextIndex];
+                const x = atomX(atom, layout);
+                const offset = (timeline.voice === "upper" ? 1 : -1) * (level - 1) * 5 * scale;
+                if (next?.kind === "chord" && next.notation.beamLevel >= level) {
+                    const nextX = atomX(next, layout);
+                    svgLine(svg, x, beamYAt(geometry, x) + offset, nextX, beamYAt(geometry, nextX) + offset, "drum-beam");
+                    return;
+                }
+                const previousIndex = ordered[orderedPosition - 1];
+                const previous = previousIndex === undefined ? undefined : timeline.atoms[previousIndex];
+                if (previous?.kind === "chord" && previous.notation.beamLevel >= level) return;
+                const pointsRight = notePosition < geometry.noteIndexes.length - 1;
+                const hookEnd = x + (pointsRight ? 9 : -9) * scale;
+                const hook = svgLine(svg, x, beamYAt(geometry, x) + offset, hookEnd, beamYAt(geometry, hookEnd) + offset, "drum-beam");
+                hook.classList.add("drum-beam-hook");
+            });
+        }
+    });
+    return membership;
+}
+
+function renderTuplets(
+    svg: SVGSVGElement,
+    timeline: VoiceTimeline,
+    layout: MeasureEngravingLayout,
+    scale: number,
+): void {
+    timeline.tupletGroups.forEach(group => {
+        const start = layout.xAtTick(group.startTick);
+        const end = layout.xAtTick(group.endTick);
+        const y = timeline.voice === "upper" ? UPPER_BEAM_Y - 18 * scale : LOWER_BEAM_Y + 22 * scale;
+        svgText(svg, "3", (start + end) / 2, y + (timeline.voice === "upper" ? 0 : 4), "drum-tuplet-number");
+        if (!group.showBracket) return;
+        const gap = 8 * scale;
+        svgLine(svg, start, y, (start + end) / 2 - gap, y, "drum-tuplet-bracket");
+        svgLine(svg, (start + end) / 2 + gap, y, end, y, "drum-tuplet-bracket");
+        const edge = timeline.voice === "upper" ? 4 : -4;
+        svgLine(svg, start, y, start, y + edge, "drum-tuplet-bracket");
+        svgLine(svg, end, y, end, y + edge, "drum-tuplet-bracket");
+    });
+}
+
+function renderVoice(
+    svg: SVGSVGElement,
+    document: DrumDocument,
+    measure: DrumMeasure,
+    layout: MeasureEngravingLayout,
+    voice: DrumVoice,
+    scale: number,
+    oppositeOnsets: Set<number>,
+): void {
+    const timeline = buildVoiceTimeline(document, measure, voice);
+    if (!timeline) return;
+    const geometries = beamGeometry(timeline, layout);
+    const beamed = drawBeams(svg, timeline, layout, scale, geometries);
+
+    timeline.atoms.forEach((atom, atomIndex) => {
+        const x = atomX(atom, layout);
+        if (atom.kind === "rest") {
+            renderRest(svg, atom, x, scale, oppositeOnsets.has(atom.tick));
+            return;
+        }
+        if (atom.continuation) return;
+        const geometry = beamed.get(atomIndex);
+        const ys = atom.events.map(eventY);
+        const isolatedEnd = voice === "upper" ? Math.min(...ys) - 23 * scale : Math.max(...ys) + 23 * scale;
+        const stemEnd = geometry ? beamYAt(geometry, x) : isolatedEnd;
+        let decorationIndex = 0;
+        atom.events.forEach(event => {
+            const currentDecoration = event.articulation === "normal" ? 0 : decorationIndex++;
+            renderNotehead(svg, event, x, scale, currentDecoration, stemEnd);
             if (event.tied) {
-                const durationY = eventY(event) + (voice === "upper" ? -7 : 7) * scale;
-                const endX = Math.min(left + width - 6, chord.x + event.durationTicks / (measure.beats * TICKS_PER_BEAT) * width);
-                svgLine(svg, chord.x + 4, durationY, endX, durationY, "drum-duration");
+                const endX = Math.min(layout.right - 6, layout.xAtTick(event.tick + event.durationTicks));
+                const y = eventY(event) + (voice === "upper" ? 8 : -8) * scale;
+                const curve = (voice === "upper" ? 5 : -5) * scale;
+                svgPath(svg, `M ${x + 4} ${y} Q ${(x + endX) / 2} ${y + curve} ${endX} ${y}`, "drum-tie");
             }
         });
-        if (chord.events.every(event => event.instrument === "HF")) return;
-        const ys = chord.events.map(eventY);
+        const dotAnchor = atom.events[atom.events.length - 1];
+        if (dotAnchor) renderDots(svg, atom, x, eventY(dotAnchor), scale);
+        if (atom.events.every(event => event.instrument === "HF")) return;
         const stemStart = voice === "upper" ? Math.max(...ys) - 4 * scale : Math.min(...ys) + 4 * scale;
-        const isolatedEnd = voice === "upper" ? Math.min(...ys) - 28 * scale : Math.max(...ys) + 28 * scale;
-        const stemEnd = beamed.has(chord) ? beamY : isolatedEnd;
-        svgLine(svg, chord.x, stemStart, chord.x, stemEnd, "drum-note");
-        if (!beamed.has(chord)) renderFlag(svg, chord, stemEnd, scale);
+        svgLine(svg, x, stemStart, x, stemEnd, "drum-note");
+        if (!geometry) renderFlag(svg, atom, x, stemEnd);
     });
+    renderTuplets(svg, timeline, layout, scale);
 }
 
 function countLabels(subdivisions: number): string[] {
@@ -186,12 +341,11 @@ function renderMeasure(
     svg: SVGSVGElement,
     document: DrumDocument,
     measure: DrumMeasure,
-    left: number,
-    width: number,
+    layout: MeasureEngravingLayout,
     scale: number,
     showCount: boolean,
 ): void {
-    const right = left + width;
+    const { left, right, width } = layout;
     svgLine(svg, left, STAFF_MID_Y - 2 * STAFF_S, left, STAFF_MID_Y + 2 * STAFF_S, "drum-bar");
     svgLine(svg, right, STAFF_MID_Y - 2 * STAFF_S, right, STAFF_MID_Y + 2 * STAFF_S, "drum-bar");
     if (!measure.valid) {
@@ -203,14 +357,16 @@ function renderMeasure(
         marker.classList.add("drum-invalid-measure");
         svg.appendChild(marker);
     }
-    renderVoice(svg, measure, "upper", left, width, scale);
-    renderVoice(svg, measure, "lower", left, width, scale);
+    const upperOnsets = new Set(measure.events.filter(event => event.voice === "upper").map(event => event.tick));
+    const lowerOnsets = new Set(measure.events.filter(event => event.voice === "lower").map(event => event.tick));
+    renderVoice(svg, document, measure, layout, "upper", scale, lowerOnsets);
+    renderVoice(svg, document, measure, layout, "lower", scale, upperOnsets);
     if (showCount) {
         const labels = countLabels(measure.subdivisionsPerBeat);
         for (let beat = 0; beat < measure.beats; beat++) {
             labels.forEach((label, offset) => {
                 const tick = beat * TICKS_PER_BEAT + offset * (TICKS_PER_BEAT / measure.subdivisionsPerBeat);
-                const x = left + 12 + tick / (measure.beats * TICKS_PER_BEAT) * (width - 24);
+                const x = layout.xAtTick(tick);
                 svgText(svg, offset === 0 ? (beat + 1).toString() : label, x, 21, "drum-subdivision");
             });
         }
@@ -226,11 +382,28 @@ function renderMeasure(
     }
 }
 
-function measuresPerSystem(width: number): number {
-    if (width < 520) return 1;
-    if (width < 820) return 2;
-    if (width < 1100) return 3;
-    return 4;
+function systemVerticalBounds(document: DrumDocument, measures: DrumMeasure[], scale: number): { top: number; height: number } {
+    const baseBottom = document.style === "compact" ? 142 : document.style === "practice" ? 178 : 155;
+    const chordSize = (voice: DrumVoice) => {
+        const counts = measures.flatMap(measure => {
+            const grouped = new Map<number, number>();
+            measure.events.filter(event => event.voice === voice).forEach(event => grouped.set(event.tick, (grouped.get(event.tick) ?? 0) + 1));
+            return [...grouped.values()];
+        });
+        return Math.max(1, ...counts);
+    };
+    const upperDecorations = chordSize("upper");
+    const lowerDecorations = chordSize("lower");
+    const hasSimpleTuplets = document.timeSignature.meterType !== "compound"
+        && measures.some(measure => measure.events.some(event => event.durationTicks === 4 || event.durationTicks === 8));
+    const upperExtent = UPPER_BEAM_Y - (20 + (upperDecorations - 1) * 7) * scale - 8;
+    const tupletExtent = hasSimpleTuplets ? UPPER_BEAM_Y - 22 * scale - 8 : 0;
+    const top = Math.floor(Math.min(0, upperExtent, tupletExtent));
+    const lowerEvents = measures.flatMap(measure => measure.events.filter(event => event.voice === "lower"));
+    const lowestHead = lowerEvents.length > 0 ? Math.max(...lowerEvents.map(eventY)) : STAFF_MID_Y;
+    const lowerExtent = lowestHead + (25 + (lowerDecorations - 1) * 7) * scale + 7;
+    const bottom = Math.ceil(Math.max(baseBottom, lowerExtent));
+    return { top, height: bottom - top };
 }
 
 export function renderDrumDocument(
@@ -257,27 +430,34 @@ export function renderDrumDocument(
                 row.textContent = `${item.severity === "error" ? "Error" : "Warning"} L${item.location.line}: ${item.message}`;
             });
         }
-        const availableWidth = Math.max(320, container.clientWidth || 720);
-        const perSystem = measuresPerSystem(availableWidth);
-        for (let start = 0; start < documentModel.measures.length; start += perSystem) {
-            const measures = documentModel.measures.slice(start, start + perSystem);
-            const prefix = start === 0 ? 70 : 28;
-            const measureWidth = Math.max(190, Math.min(310, (availableWidth - prefix - 20) / measures.length));
-            const svgWidth = prefix + measureWidth * measures.length + 14;
-            const svgHeight = Math.ceil((documentModel.style === "compact" ? 148 : documentModel.style === "practice" ? 190 : 170) * Math.max(1, scale));
+        const availableWidth = container.clientWidth > 0 ? container.clientWidth : 720;
+        const systems = buildEngravingSystems(documentModel, availableWidth, scale, showCount);
+        systems.forEach(system => {
+            const measures = system.measures
+                .map(layout => documentModel.measures[layout.measureIndex])
+                .filter((measure): measure is DrumMeasure => measure !== undefined);
+            const svgWidth = system.width;
+            const vertical = systemVerticalBounds(documentModel, measures, scale);
+            const svgHeight = vertical.height;
             const svg = createSVGElement("svg");
-            svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
-            svg.setAttribute("width", "100%");
+            svg.setAttribute("viewBox", `0 ${vertical.top} ${svgWidth} ${svgHeight}`);
+            svg.setAttribute("width", svgWidth > availableWidth ? svgWidth.toString() : "100%");
             svg.setAttribute("height", svgHeight.toString());
             svg.classList.add("drum-svg", "drum-system");
-            renderStaff(svg, prefix, prefix + measures.length * measureWidth);
-            if (start === 0) renderClefAndMeter(svg, 13, documentModel);
-            measures.forEach((measure, index) => renderMeasure(svg, documentModel, measure, prefix + index * measureWidth, measureWidth, scale, showCount));
-            if (showLabels && start === 0) {
+            const first = system.measures[0];
+            const last = system.measures[system.measures.length - 1];
+            if (first && last) renderStaff(svg, first.left, last.right);
+            if (system.startMeasure === 0) renderClefAndMeter(svg, 13, documentModel);
+            system.measures.forEach(layout => {
+                const measure = documentModel.measures[layout.measureIndex];
+                if (measure) renderMeasure(svg, documentModel, measure, layout, scale, showCount);
+            });
+            const prefix = system.prefix;
+            if (showLabels && system.startMeasure === 0) {
                 svgText(svg, documentModel.instruments.map(item => item.instrument).join(" · "), prefix, svgHeight - 12, "drum-instrument-legend");
             }
             wrapper.appendChild(svg);
-        }
+        });
     };
 
     let frame = 0;

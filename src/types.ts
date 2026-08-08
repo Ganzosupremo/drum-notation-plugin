@@ -86,6 +86,82 @@ export interface DrumEvent {
     tied?: boolean;
 }
 
+export type RhythmAtomKind = "chord" | "rest";
+export type RhythmBaseValue = "whole" | "half" | "quarter" | "eighth" | "sixteenth" | "thirty-second";
+
+export interface RhythmNotation {
+    base: RhythmBaseValue;
+    dots: number;
+    beamLevel: number;
+    tuplet?: 3;
+}
+
+export interface RhythmAtom {
+    kind: RhythmAtomKind;
+    voice: DrumVoice;
+    tick: number;
+    durationTicks: number;
+    events: DrumEvent[];
+    notation: RhythmNotation;
+    continuation?: boolean;
+}
+
+export interface RhythmBeamGroup {
+    startTick: number;
+    endTick: number;
+    atomIndexes: number[];
+    tuplet?: 3;
+}
+
+export interface RhythmTupletGroup {
+    startTick: number;
+    endTick: number;
+    atomIndexes: number[];
+    showBracket: boolean;
+}
+
+export interface VoiceTimeline {
+    voice: DrumVoice;
+    atoms: RhythmAtom[];
+    beamGroups: RhythmBeamGroup[];
+    tupletGroups: RhythmTupletGroup[];
+}
+
+export interface ElementBounds {
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+    kind: "note" | "rest" | "flag" | "dot" | "articulation" | "tuplet" | "count";
+}
+
+export interface NotationColumn {
+    tick: number;
+    x: number;
+    leftExtent: number;
+    rightExtent: number;
+    bounds: ElementBounds[];
+}
+
+export interface MeasureEngravingLayout {
+    measureIndex: number;
+    requiredWidth: number;
+    width: number;
+    left: number;
+    right: number;
+    columns: NotationColumn[];
+    springMinimums: number[];
+    springWeights: number[];
+    xAtTick(tick: number): number;
+}
+
+export interface SystemEngravingLayout {
+    startMeasure: number;
+    measures: MeasureEngravingLayout[];
+    width: number;
+    prefix: number;
+}
+
 export interface DrumMeasure {
     index: number;
     events: DrumEvent[];
@@ -114,4 +190,5 @@ export interface DrumDocument {
     showLabels?: boolean;
     legacySuggestion?: string;
     hairpinPattern?: string;
+    grouping: number[];
 }

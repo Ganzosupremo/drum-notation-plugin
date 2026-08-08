@@ -31,7 +31,7 @@
 .drum-svg {
     background-color: var(--background-primary);
     border-radius: 6px;
-    padding: 10px;
+    padding: 4px;
 }
 
 .drum-label {
@@ -59,7 +59,7 @@
 
 .drum-note {
     stroke: var(--text-normal);
-    stroke-width: calc(2px * var(--drum-notation-scale, 1));
+    stroke-width: calc(1.7px * var(--drum-notation-scale, 1));
 }
 
 .drum-note-fill {
@@ -74,7 +74,8 @@
 
 .drum-beam {
     stroke: var(--text-normal);
-    stroke-width: 3;
+    stroke-width: 2.4;
+    stroke-linecap: butt;
 }
 
 .drum-duration {
@@ -190,6 +191,39 @@
     font-size: 11px;
     font-family: monospace;
     font-style: italic;
+}
+
+.drum-tie {
+    fill: none;
+    stroke: var(--text-normal);
+    stroke-width: calc(1.5px * var(--drum-notation-scale, 1));
+    stroke-linecap: round;
+}
+
+.drum-rest {
+    font-size: calc(28px * var(--drum-notation-scale, 1));
+}
+
+.drum-flag-glyph {
+    font-size: calc(34px * var(--drum-notation-scale, 1));
+    text-anchor: start;
+}
+
+.drum-rhythm-dot {
+    font-size: calc(28px * var(--drum-notation-scale, 1));
+}
+
+.drum-tuplet-bracket {
+    stroke: var(--text-normal);
+    stroke-width: 1;
+}
+
+.drum-tuplet-number {
+    fill: var(--text-normal);
+    font-family: var(--font-interface);
+    font-size: calc(11px * var(--drum-notation-scale, 1));
+    font-weight: 600;
+    text-anchor: middle;
 }
 
 .drum-diagnostics {
