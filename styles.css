@@ -15,11 +15,12 @@
     overflow-x: auto;
     margin-top: 10px;
     margin-bottom: 10px;
+    color: var(--text-normal);
 }
 
 .drum-warning {
-    background: #fff8e1;
-    color: #7a5800;
+    background: var(--background-secondary);
+    color: var(--text-warning, var(--text-normal));
     font-size: 12px;
     font-family: monospace;
     margin-bottom: 6px;
@@ -28,19 +29,19 @@
 }
 
 .drum-svg {
-    background-color: #fafafa;
+    background-color: var(--background-primary);
     border-radius: 6px;
     padding: 10px;
 }
 
 .drum-label {
-    fill: #222;
+    fill: var(--text-normal);
     font-size: 13px;
     font-family: monospace;
 }
 
 .drum-staff-line {
-    stroke: #bbb;
+    stroke: var(--text-muted);
     stroke-width: 1;
 }
 
@@ -52,38 +53,38 @@
 }
 
 .drum-bar {
-    stroke: #333;
+    stroke: var(--text-normal);
     stroke-width: 2;
 }
 
 .drum-note {
-    stroke: #111;
+    stroke: var(--text-normal);
     stroke-width: calc(2px * var(--drum-notation-scale, 1));
 }
 
 .drum-note-fill {
-    fill: #111;
+    fill: var(--text-normal);
 }
 
 .drum-subdivision {
-    fill: #555;
+    fill: var(--text-muted);
     font-size: 12px;
     font-family: monospace;
 }
 
 .drum-beam {
-    stroke: #111;
+    stroke: var(--text-normal);
     stroke-width: 3;
 }
 
 .drum-duration {
-    stroke: #111;
+    stroke: var(--text-normal);
     stroke-width: 2.5;
     stroke-linecap: round;
 }
 
 .drum-hairpin {
-    stroke: #222;
+    stroke: var(--text-normal);
     stroke-width: 2;
     stroke-linecap: round;
 }
@@ -109,7 +110,7 @@
 .drum-glyph {
     font-family: 'Bravura', serif;
     font-size: calc(40px * var(--drum-notation-scale, 1));
-    fill: #111;
+    fill: var(--text-normal);
     dominant-baseline: auto;
     text-anchor: middle;
 }
@@ -160,7 +161,7 @@
 }
 
 .drum-note-ghost-paren {
-    fill: #333;
+    fill: var(--text-muted);
     font-size: 14px;
     font-family: monospace;
     text-anchor: middle;
@@ -172,11 +173,11 @@
 }
 
 .drum-note-ride {
-    stroke: #111;
+    stroke: var(--text-normal);
 }
 
 .drum-note-crash {
-    stroke: #111;
+    stroke: var(--text-normal);
 }
 
 .drum-note-hf {
@@ -185,8 +186,92 @@
 }
 
 .drum-feel-indicator {
-    fill: #777;
+    fill: var(--text-muted);
     font-size: 11px;
     font-family: monospace;
     font-style: italic;
+}
+
+.drum-diagnostics {
+    display: grid;
+    gap: 3px;
+    margin-bottom: 6px;
+    font-family: var(--font-monospace);
+    font-size: var(--font-ui-smaller);
+}
+
+.drum-diagnostic {
+    padding: 4px 8px;
+    border-inline-start: 3px solid var(--text-muted);
+    border-radius: var(--radius-s);
+    background: var(--background-secondary);
+}
+
+.drum-diagnostic-error {
+    border-inline-start-color: var(--text-error);
+    color: var(--text-error);
+}
+
+.drum-diagnostic-warning {
+    border-inline-start-color: var(--text-warning, var(--text-accent));
+}
+
+.drum-system {
+    display: block;
+    max-width: 100%;
+    margin: 0 0 4px;
+}
+
+.drum-percussion-clef,
+.drum-ledger-line,
+.drum-flag {
+    stroke: var(--text-normal);
+    stroke-width: 1.7;
+    stroke-linecap: round;
+}
+
+.drum-time-signature {
+    fill: var(--text-normal);
+    font-family: var(--font-interface);
+    font-size: 17px;
+    font-weight: 700;
+    text-anchor: middle;
+}
+
+.drum-open-marker {
+    fill: var(--background-primary);
+    stroke: var(--text-normal);
+    stroke-width: 1.5;
+}
+
+.drum-glyph-ghost {
+    opacity: 0.48;
+}
+
+.drum-invalid-measure {
+    fill: var(--background-modifier-error);
+    opacity: 0.12;
+    pointer-events: none;
+}
+
+.drum-instrument-legend {
+    fill: var(--text-muted);
+    font-family: var(--font-monospace);
+    font-size: 11px;
+}
+
+.drum-style-compact .drum-subdivision,
+.drum-style-compact .drum-instrument-legend {
+    display: none;
+}
+
+.drum-style-practice .drum-subdivision {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.drum-scale-display {
+    margin-top: -0.5em;
+    margin-bottom: 0.5em;
+    text-align: right;
 }

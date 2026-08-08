@@ -1,88 +1,92 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
-import MyPlugin from "./main";
+import DrumNotationPlugin from "./main";
 
-export interface MyPluginSettings {
-        beatsPerBar: number;
-        notationScale: number;
-        showInstrumentLabels: boolean;
+export interface DrumNotationSettings {
+    beatsPerBar: number;
+    notationScale: number;
+    showInstrumentLabels: boolean;
+    showCount: boolean;
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-        beatsPerBar: 4,
-        notationScale: 100,
-        showInstrumentLabels: true,
+export const DEFAULT_SETTINGS: DrumNotationSettings = {
+    beatsPerBar: 4,
+    notationScale: 100,
+    showInstrumentLabels: false,
+    showCount: false,
 };
 
-export class SampleSettingTab extends PluginSettingTab {
-        plugin: MyPlugin;
+export class DrumNotationSettingTab extends PluginSettingTab {
+    constructor(app: App, private readonly plugin: DrumNotationPlugin) {
+        super(app, plugin);
+    }
 
-        constructor(app: App, plugin: MyPlugin) {
-                super(app, plugin);
-                this.plugin = plugin;
-        }
+    display(): void {
+        const { containerEl } = this;
+        containerEl.empty();
 
-        display(): void {
-                const {containerEl} = this;
+        new Setting(containerEl)
+            .setName("Show instrument labels")
+            .setDesc("Display the short instrument code (hh, sd, bd …) below the first system.")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showInstrumentLabels)
+                .onChange(async value => {
+                    this.plugin.settings.showInstrumentLabels = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshRenderers();
+                }));
 
-                containerEl.empty();
+        new Setting(containerEl)
+            .setName("Show subdivision count")
+            .setDesc("Display beat counting above the staff. Practice-style blocks always show it.")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showCount)
+                .onChange(async value => {
+                    this.plugin.settings.showCount = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshRenderers();
+                }));
 
-                new Setting(containerEl)
-                        .setName('Show instrument labels')
-                        .setDesc('Display the short instrument code (HH, SD, BD …) to the left of each staff. Turn off for a cleaner chart when the instruments are self-evident.')
-                        .addToggle(toggle => toggle
-                                .setValue(this.plugin.settings.showInstrumentLabels)
-                                .onChange(async (value) => {
-                                        this.plugin.settings.showInstrumentLabels = value;
-                                        await this.plugin.saveSettings();
-                                }));
+        new Setting(containerEl)
+            .setName("Beats per bar")
+            .setDesc("Default time-signature numerator when a block does not declare a meter.")
+            .addText(text => text
+                .setPlaceholder("4")
+                .setValue(this.plugin.settings.beatsPerBar.toString())
+                .onChange(async value => {
+                    const parsed = Number.parseInt(value, 10);
+                    this.plugin.settings.beatsPerBar = Number.isFinite(parsed) && parsed > 0
+                        ? parsed
+                        : DEFAULT_SETTINGS.beatsPerBar;
+                    await this.plugin.saveSettings();
+                }));
 
-                new Setting(containerEl)
-                        .setName('Beats per bar')
-                        .setDesc('Default time signature numerator used for beam grouping.')
-                        .addText(text => text
-                                .setPlaceholder('4')
-                                .setValue(this.plugin.settings.beatsPerBar.toString())
-                                .onChange(async (value) => {
-                                        const parsed = Number.parseInt(value, 10);
-                                        this.plugin.settings.beatsPerBar = Number.isFinite(parsed) && parsed > 0
-                                                ? parsed
-                                                : DEFAULT_SETTINGS.beatsPerBar;
-                                        await this.plugin.saveSettings();
-                                }));
+        let scaleDisplay: HTMLDivElement;
+        new Setting(containerEl)
+            .setName("Notation scale")
+            .setDesc("Adjust the visual size of noteheads and stems (80%–150%).")
+            .addSlider(slider => slider
+                .setLimits(80, 150, 1)
+                .setValue(this.plugin.settings.notationScale)
+                .setDynamicTooltip()
+                .onChange(async value => {
+                    this.plugin.settings.notationScale = value;
+                    scaleDisplay.textContent = `${value}%`;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshRenderers();
+                }))
+            .addExtraButton(button => button
+                .setIcon("reset")
+                .setTooltip("Reset to default (100%)")
+                .onClick(async () => {
+                    this.plugin.settings.notationScale = DEFAULT_SETTINGS.notationScale;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshRenderers();
+                    this.display();
+                }));
 
-                let scaleDisplay: HTMLSpanElement;
-                new Setting(containerEl)
-                        .setName('Notation scale')
-                        .setDesc('Adjust the visual size of noteheads and stems (80%–150%). Default is 100%.')
-                        .addSlider(slider => {
-                                slider
-                                        .setLimits(80, 150, 1)
-                                        .setValue(this.plugin.settings.notationScale)
-                                        .setDynamicTooltip()
-                                        .onChange(async (value) => {
-                                                this.plugin.settings.notationScale = value;
-                                                scaleDisplay.textContent = `${value}%`;
-                                                this.plugin.applyNotationScale();
-                                                await this.plugin.saveSettings();
-                                        });
-                        })
-                        .addExtraButton(btn => {
-                                btn.setIcon('reset')
-                                        .setTooltip('Reset to default (100%)')
-                                        .onClick(async () => {
-                                                this.plugin.settings.notationScale = DEFAULT_SETTINGS.notationScale;
-                                                this.plugin.applyNotationScale();
-                                                await this.plugin.saveSettings();
-                                                this.display();
-                                        });
-                        });
-
-                scaleDisplay = containerEl.createEl('div', {
-                        text: `${this.plugin.settings.notationScale}%`,
-                        cls: 'setting-item-description'
-                });
-                scaleDisplay.style.textAlign = 'right';
-                scaleDisplay.style.marginTop = '-0.5em';
-                scaleDisplay.style.marginBottom = '0.5em';
-        }
+        scaleDisplay = containerEl.createDiv({
+            text: `${this.plugin.settings.notationScale}%`,
+            cls: ["setting-item-description", "drum-scale-display"],
+        });
+    }
 }

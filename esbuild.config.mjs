@@ -1,6 +1,10 @@
 import esbuild from "esbuild";
 import process from "process";
 import { builtinModules } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+
+const projectDir = path.dirname(fileURLToPath(import.meta.url));
 
 const banner =
 `/*
@@ -15,7 +19,8 @@ const context = await esbuild.context({
 	banner: {
 		js: banner,
 	},
-	entryPoints: ["src/main.ts"],
+	absWorkingDir: projectDir,
+	entryPoints: [path.join(projectDir, "src", "main.ts")],
 	bundle: true,
 	external: [
 		"obsidian",

@@ -79,7 +79,7 @@ function parseHeaderLine(
         return { feel: "swing" };
     }
 
-    const headerPattern = /^(time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution|feel|swing)\s*(?:[:=]|\s)\s*(.+)$/i as RegExp;
+    const headerPattern = /^(time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution|feel|swing)\s*(?:[:=]|\s)\s*(.+)$/i;
     const headerMatch = line.match(headerPattern);
 
     if (!headerMatch) return undefined;
@@ -122,7 +122,7 @@ function parseHeaderLine(
     if (key === "feel" || key === "swing") {
         const feelValue = value.toLowerCase();
         if (feelValue === "swing" || feelValue === "straight" || feelValue === "triplet") {
-            return { feel: feelValue as "straight" | "swing" | "triplet" };
+            return { feel: feelValue };
         }
         warnings.push(`Unknown feel value: "${value}"`);
         return {};

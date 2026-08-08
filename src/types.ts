@@ -53,3 +53,65 @@ export interface BeamGroup {
     // true (default) = beams above noteheads (stems up); false = beams below (stems down).
     stemUp?: boolean;
 }
+
+export const TICKS_PER_BEAT = 12;
+
+export type DrumVoice = "upper" | "lower";
+export type DiagnosticSeverity = "warning" | "error";
+export type NotationStyle = "standard" | "compact" | "practice";
+
+export interface SourceLocation {
+    line: number;
+    column: number;
+}
+
+export interface DrumDiagnostic {
+    severity: DiagnosticSeverity;
+    code: string;
+    message: string;
+    location: SourceLocation;
+    instrument?: string;
+    measure?: number;
+}
+
+export interface DrumEvent {
+    instrument: string;
+    voice: DrumVoice;
+    measure: number;
+    tick: number;
+    durationTicks: number;
+    symbol: string;
+    articulation: Articulation;
+    source: SourceLocation;
+    tied?: boolean;
+}
+
+export interface DrumMeasure {
+    index: number;
+    events: DrumEvent[];
+    ticksPerBeat: number;
+    beats: number;
+    subdivisionsPerBeat: number;
+    valid: boolean;
+}
+
+export interface InstrumentVoice {
+    instrument: string;
+    voice: DrumVoice;
+    events: DrumEvent[];
+}
+
+export interface DrumDocument {
+    version: 2;
+    sourceMode: "positions" | "grid" | "legacy";
+    timeSignature: TimeSignature;
+    measures: DrumMeasure[];
+    instruments: InstrumentVoice[];
+    diagnostics: DrumDiagnostic[];
+    feel?: "straight" | "swing" | "triplet";
+    style: NotationStyle;
+    showCount: boolean;
+    showLabels?: boolean;
+    legacySuggestion?: string;
+    hairpinPattern?: string;
+}

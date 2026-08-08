@@ -62,5 +62,5 @@ src/
 
 ## Release notes
 
-- Release artifacts: `main.js`, `manifest.json`, `styles.css`
+- Release artifacts: `main.js`, `manifest.json`, `styles.css`, `Bravura.woff2`
 - Do not commit build artifacts
