@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { before, describe, test } from "node:test";
 import { parseDrumDocument } from "../notation/parseDocument";
 import { renderDrumDocument } from "./renderDocument";
+import { GLYPHS } from "./smufl";
 
 class MockClassList {
     readonly values = new Set<string>();
@@ -181,6 +182,7 @@ describe("responsive document renderer", () => {
         const elements = descendants(container);
         assert.ok(elements.some(element => element.attributes.get("data-technique") === "cross-stick"));
         assert.ok(elements.some(element => element.attributes.get("data-technique") === "rimshot"));
+        assert.equal(elements.find(element => element.attributes.get("data-technique") === "rimshot")?.textContent, GLYPHS.noteheadSlashedBlack1);
         assert.ok(elements.some(element => element.attributes.get("data-technique") === "bell"));
         assert.equal(elements.filter(element => element.classList.values.has("drum-grace-note")).length, 3);
         assert.equal(elements.filter(element => element.classList.values.has("drum-roll-stroke")).length, 3);
@@ -211,12 +213,4 @@ describe("responsive document renderer", () => {
         custom.destroy();
     });
 
-    test("offers one copyable v2 migration inside a legacy diagnostic", () => {
-        const container = new MockElement("div");
-        const model = parseDrumDocument("HH |x-x-x-x-x-x-x-x-|\nSD |----o-------o---|\nBD |o-------o-------|");
-        const rendered = renderDrumDocument(model, container as unknown as HTMLElement);
-        const buttons = descendants(container).filter(element => element.tagName === "button" && element.textContent === "Copy v2 syntax");
-        assert.equal(buttons.length, 1);
-        rendered.destroy();
-    });
 });

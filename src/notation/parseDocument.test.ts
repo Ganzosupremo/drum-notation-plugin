@@ -2,8 +2,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { parseDrumDocument } from "./parseDocument";
-import { buildMeasureChords } from "../renderer/renderDocument";
-import { serializeCompactDocument } from "./serializeCompact";
+import { buildMeasureChords } from "../renderer/engraving";
 
 describe("drum document v2 position syntax", () => {
     test("normalizes compact syntax to the same musical events as long syntax", () => {
@@ -124,14 +123,6 @@ describe("drum document v2 position syntax", () => {
         ]);
     });
 
-    test("serializes a legacy groove to parseable compact v2 syntax", () => {
-        const legacy = parseDrumDocument("HH |x-x-x-x-x-x-x-x-|\nSD |----o-------o---|\nBD |o-------o-------|");
-        const migrated = parseDrumDocument(serializeCompactDocument(legacy));
-        const onsets = (document: typeof legacy) => document.measures.map(measure => measure.events.map(event => [event.instrument, event.tick, event.articulation]));
-        assert.deepEqual(onsets(migrated), onsets(legacy));
-        assert.equal(migrated.sourceMode, "positions");
-    });
-
     test("offers a safe copyable correction for a nearby instrument name", () => {
         const document = parseDrumDocument("4/4\nHS: 1 2");
         const diagnostic = document.diagnostics.find(item => item.code === "unknown-instrument");
@@ -197,7 +188,7 @@ describe("drum document v2 position syntax", () => {
     });
 });
 
-describe("drum document v2 grid and legacy syntax", () => {
+describe("drum document v2 grid syntax", () => {
     test("token grid treats whitespace as grouping only", () => {
         const document = parseDrumDocument([
             "meter: 4/4",
@@ -209,18 +200,6 @@ describe("drum document v2 grid and legacy syntax", () => {
         assert.equal(document.measures[0]?.subdivisionsPerBeat, 4);
         assert.equal(document.measures[0]?.events.find(event => event.instrument === "HH" && event.tick === 21)?.articulation, "open");
         assert.equal(document.diagnostics.filter(item => item.code === "measure-length").length, 0);
-    });
-
-    test("corrects legacy spaced eighth-note convention", () => {
-        const document = parseDrumDocument([
-            "HH |x-x-x-x-x-x-x-x-|",
-            "SD |----o-------o---|",
-            "BD |o-------o-------|",
-        ].join("\n"));
-        assert.equal(document.sourceMode, "legacy");
-        assert.equal(document.measures[0]?.subdivisionsPerBeat, 2);
-        assert.deepEqual(document.measures[0]?.events.filter(event => event.instrument === "SD").map(event => event.tick), [12, 36]);
-        assert.equal(document.diagnostics.filter(item => item.code === "legacy-syntax").length, 1);
     });
 
     test("normalizes instrument case and reports invalid lengths without discarding valid events", () => {

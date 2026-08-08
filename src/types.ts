@@ -1,8 +1,3 @@
-export interface DrumLine {
-    instrument: string;
-    pattern: string;
-}
-
 export type MeterType = "simple" | "compound";
 
 export interface TimeSignature {
@@ -12,47 +7,7 @@ export interface TimeSignature {
     beatsPerBar: number;
 }
 
-export interface DrumNotation {
-    lines: DrumLine[];
-    beatsPerBar?: number;
-    timeSignature?: TimeSignature;
-    subdivisionsPerBeat?: number;
-    feel?: "straight" | "swing" | "triplet";
-    warnings?: string[];
-    hairpinPattern?: string;
-}
-
 export type Articulation = "normal" | "open" | "ghost" | "accent" | "accent-open";
-
-export interface NoteEvent {
-
-    instrument: string;
-
-    symbol: string;
-
-    articulation: Articulation;
-
-    index: number;
-
-    x: number;
-
-    // Duration in grid cells (subdivision units). 1 = one cell.
-    duration: number;
-}
-
-export interface BeamGroup {
-
-    startX: number;
-
-    endX: number;
-
-    y: number;
-
-    beamCount: number;
-
-    // true (default) = beams above noteheads (stems up); false = beams below (stems down).
-    stemUp?: boolean;
-}
 
 export const TICKS_PER_BEAT = 12;
 
@@ -195,7 +150,7 @@ export interface InstrumentVoice {
 
 export interface DrumDocument {
     version: 2;
-    sourceMode: "positions" | "grid" | "legacy";
+    sourceMode: "positions" | "grid";
     timeSignature: TimeSignature;
     measures: DrumMeasure[];
     instruments: InstrumentVoice[];
@@ -204,7 +159,6 @@ export interface DrumDocument {
     style: NotationStyle;
     showCount: boolean;
     showLabels?: boolean;
-    legacySuggestion?: string;
     hairpinPattern?: string;
     grouping: number[];
     instrumentPositions: Record<string, number>;

@@ -84,36 +84,17 @@ Regular simple meters group beams by pulse, 5/4 defaults to `3+2`, and compound 
 
 The renderer displays percussion clef and time signature by default. Musical elements at the same tick share a column, and spacing expands for dense rhythms, ghosts, flags, dots, and rests. Systems are justified to the pane width, contain at most four measures, and use one measure below 520 px. An overfull dense measure keeps its readable natural width and can scroll horizontally.
 
-## Legacy blocks
-
-Existing compact blocks continue to render:
-
-````md
-```drums
-HH |x-x-x-x-x-x-x-x-|
-SD |----o-------o---|
-BD |o-------o-------|
-```
-````
-
-When all hits fall on alternating cells, version 2 interprets this convention as eighth notes instead of sixteenths. A non-blocking migration notice recommends adding an explicit grid or converting to position syntax. The plugin never rewrites vault notes.
-
-Diagnostics appear inside the rendered block with the exact source token highlighted. Deterministic corrections can be copied as a corrected block, and legacy blocks include a **Copy v2 syntax** action. The plugin never changes the note automatically.
+Diagnostics appear inside the rendered block with the exact source token highlighted. Deterministic corrections can be copied as a corrected block. The plugin never changes the note automatically.
 
 ## Development and release
 
 ```bash
 npm install
-npm test
-npm run lint
-npm run build
+npx playwright install chromium
+npm run check
+npm run package
 ```
 
-Release files are `main.js`, `manifest.json`, `styles.css`, and `Bravura.woff2`. Generated `main.js` is uploaded with releases and is not committed.
+`npm run package` stages `main.js`, `manifest.json`, `styles.css`, and `Bravura.woff2` in `release/`. Generated artifacts are uploaded with releases and are not committed. Unit tests cover parsing, rhythm and layout; Playwright snapshots cover Chromium rendering at mobile, tablet and desktop widths in both themes.
 
 Playback, MIDI, visual editing, and image/PDF export are outside the current scope.
-
-## Future improvements
-
-- Removal of the compatibility renderer after the legacy transition.
-- Browser-based visual regression tests for glyphs, clipping, themes, and scale.

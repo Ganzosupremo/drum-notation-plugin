@@ -1,4 +1,4 @@
-import { buildTimeSignature, parseDrumNotation } from "../parser";
+import { buildTimeSignature, parseDirectives } from "./directives";
 import {
     Articulation,
     DrumDiagnostic,
@@ -217,8 +217,6 @@ function parseGridLane(
     lineNumber: number,
     subdivisions: number,
     beats: number,
-    explicitGrid: boolean,
-    collapseLegacySpacing: boolean,
     diagnostics: DrumDiagnostic[],
 ): ParsedLane | undefined {
     const firstPipe = lineText.indexOf("|");
@@ -254,14 +252,6 @@ function parseGridLane(
             tokens = compact;
         }
 
-        if (!explicitGrid && collapseLegacySpacing && !tokenMode) {
-            const collapsed: string[] = [];
-            for (let i = 0; i < tokens.length; i += 2) {
-                const pair = tokens.slice(i, i + 2);
-                collapsed.push(pair.find(token => token !== "-") ?? "-");
-            }
-            tokens = collapsed;
-        }
         const tokenColumns = tokens.map(token => {
             const found = lineText.indexOf(token, tokenSearchCursor);
             if (found < 0) return firstPipe + 2;
@@ -522,41 +512,23 @@ function parsePositionLane(
     return lane;
 }
 
-function shouldCollapseLegacy(lines: string[], beats: number): boolean {
-    const compactPatterns = lines
-        .filter(line => line.includes("|"))
-        .map(line => line.slice(line.indexOf("|") + 1).replace(/\|/g, "").replace(/\s+/g, ""));
-    if (compactPatterns.length === 0 || !compactPatterns.every(pattern => pattern.length === beats * 4)) return false;
-    return compactPatterns.every(pattern => {
-        const tokens = tokenizeCompact(pattern);
-        return tokens !== undefined && tokens.every((token, index) => index % 2 === 0 || token === "-");
-    });
-}
-
 export function parseDrumDocument(source: string, headerLine?: string, defaultBeatsPerBar = 4): DrumDocument {
     const normalizedSource = normalizeBareMeter(source);
     const normalizedHeader = headerLine ? normalizeBareMeter(headerLine) : undefined;
-    const legacyMeta = parseDrumNotation(normalizedSource, normalizedHeader);
-    const timeSignature = legacyMeta.timeSignature ?? buildTimeSignature(legacyMeta.beatsPerBar ?? defaultBeatsPerBar, 4);
+    const directives = parseDirectives(normalizedSource, normalizedHeader);
+    const timeSignature = directives.timeSignature ?? buildTimeSignature(directives.beatsPerBar ?? defaultBeatsPerBar, 4);
     const diagnostics: DrumDiagnostic[] = [];
-    const headerWarnings = new Set(normalizedHeader ? parseDrumNotation("", normalizedHeader).warnings ?? [] : []);
-    (legacyMeta.warnings ?? []).filter((warning, index, all) => all.indexOf(warning) === index).forEach(warning => {
-        const fromHeader = headerWarnings.has(warning);
-        diagnostic(diagnostics, "warning", "header", warning, 1, 1, undefined, undefined, fromHeader ? normalizedHeader?.length ?? 1 : 1);
-        if (fromHeader) diagnostics[diagnostics.length - 1]!.location.source = "fence-header";
+    directives.warnings.forEach(warning => {
+        diagnostic(diagnostics, "warning", "header", warning.message, 1, 1, undefined, undefined, warning.length);
+        diagnostics[diagnostics.length - 1]!.location.source = warning.source;
     });
     const lines = normalizedSource.split(/\r?\n/);
     const contentLines = lines.filter(line => line.trim() && !HEADER.test(line.trim()) && !/^hairpin\s*\|/i.test(line.trim()));
     const positionMode = contentLines.some(line => /^\s*[a-z][a-z0-9]*\s*:/i.test(line));
-    const explicitGrid = legacyMeta.subdivisionsPerBeat !== undefined || /^\s*(?:grid|subdiv)/im.test(normalizedSource) || /\b(?:grid|subdiv)\b/i.test(normalizedHeader ?? "");
-    const collapseLegacy = !positionMode && !explicitGrid && shouldCollapseLegacy(contentLines, timeSignature.beatsPerBar);
-    const rawSubdivisions = legacyMeta.subdivisionsPerBeat;
+    const explicitGrid = directives.subdivisionsPerBeat !== undefined || /^\s*(?:grid|subdiv)/im.test(normalizedSource) || /\b(?:grid|subdiv)\b/i.test(normalizedHeader ?? "");
+    const rawSubdivisions = directives.subdivisionsPerBeat;
     const normalizedSubdivisions = rawSubdivisions === 16 ? 4 : rawSubdivisions === 8 ? 2 : rawSubdivisions;
-    const subdivisions = explicitGrid
-        ? normalizedSubdivisions ?? 4
-        : collapseLegacy
-            ? 2
-            : timeSignature.meterType === "compound" ? 3 : 4;
+    const subdivisions = normalizedSubdivisions ?? (timeSignature.meterType === "compound" ? 3 : 4);
     const lanes: ParsedLane[] = [];
 
     lines.forEach((line, index) => {
@@ -564,7 +536,7 @@ export function parseDrumDocument(source: string, headerLine?: string, defaultBe
         if (!trimmed || HEADER.test(trimmed) || /^hairpin\s*\|/i.test(trimmed)) return;
         const lane = positionMode
             ? parsePositionLane(line, index + 1, timeSignature, diagnostics)
-            : parseGridLane(line, index + 1, subdivisions, timeSignature.beatsPerBar, explicitGrid, collapseLegacy, diagnostics);
+            : explicitGrid ? parseGridLane(line, index + 1, subdivisions, timeSignature.beatsPerBar, diagnostics) : undefined;
         if (lane) lanes.push(lane);
     });
 
@@ -592,14 +564,7 @@ export function parseDrumDocument(source: string, headerLine?: string, defaultBe
         voice: lane.voice,
         events: lane.measures.flat(),
     }));
-    const compactLegacy = contentLines.every(line => {
-        const pipe = line.indexOf("|");
-        return pipe >= 0 && !/\s/.test(line.slice(pipe + 1).trim());
-    });
-    const sourceMode = positionMode ? "positions" : collapseLegacy || !explicitGrid && compactLegacy ? "legacy" : "grid";
-    if (sourceMode === "legacy") {
-        diagnostic(diagnostics, "warning", "legacy-syntax", "Legacy compact syntax was interpreted automatically. Prefer token grid or position syntax for unambiguous notation.", 1);
-    }
+    const sourceMode = positionMode ? "positions" : "grid";
     const directiveSource = [normalizedHeader, normalizedSource].filter((value): value is string => Boolean(value)).join("\n");
     const style = styleDirective(directiveSource);
     const grouping = groupingDirective(directiveSource, timeSignature, diagnostics);
@@ -612,12 +577,11 @@ export function parseDrumDocument(source: string, headerLine?: string, defaultBe
         measures,
         instruments,
         diagnostics,
-        feel: legacyMeta.feel,
+        feel: directives.feel,
         style,
         showCount: boolDirective(directiveSource, "count") ?? style === "practice",
         showLabels: boolDirective(directiveSource, "labels"),
-        legacySuggestion: sourceMode === "legacy" ? "Add `grid: 8`/`grid: 16`, or migrate to position syntax." : undefined,
-        hairpinPattern: legacyMeta.hairpinPattern,
+        hairpinPattern: directives.hairpinPattern,
         grouping,
         instrumentPositions,
         positionOverrides,

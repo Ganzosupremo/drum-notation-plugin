@@ -1,20 +1,27 @@
 {
         "name": "drum-notation-plugin",
-        "version": "0.1.0",
+        "version": "1.0.0",
         "description": "Modern, groove-oriented drum notation for Obsidian.",
         "main": "main.js",
         "type": "module",
         "scripts": {
                 "dev": "node esbuild.config.mjs",
-                "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+                "build": "npm run typecheck && node esbuild.config.mjs production",
                 "version": "node version-bump.mjs && git add manifest.json versions.json",
                 "lint": "eslint .",
-                "test": "node --import tsx/esm --test src/**/*.test.ts"
+                "typecheck": "tsc --noEmit --skipLibCheck",
+                "test": "npm run test:unit",
+                "test:unit": "node --import tsx/esm --test src/**/*.test.ts",
+                "test:visual": "playwright test",
+                "bundle:verify": "node scripts/verify-bundle.mjs",
+                "package": "npm run build && npm run bundle:verify && node scripts/package-release.mjs",
+                "check": "npm run test:unit && npm run typecheck && npm run lint && npm run build && npm run bundle:verify && npm run test:visual"
         },
         "keywords": [],
         "license": "0-BSD",
         "devDependencies": {
                 "@eslint/js": "^9.39.1",
+                "@playwright/test": "^1.58.2",
                 "@types/node": "^20.19.40",
                 "esbuild": "^0.28.1",
                 "eslint": "^9.39.1",

@@ -2,65 +2,43 @@
 
 ## Project overview
 
-- Obsidian Community Plugin (TypeScript compiled to bundled `main.js`).
-- Renders groove-based drum notation blocks as SVG in markdown.
+- Obsidian Community Plugin written in TypeScript and bundled to `main.js`.
+- Renders v2 position syntax and explicit token grids as responsive SVG drum notation.
 - Entry point: `src/main.ts`.
 
-## Tooling
-
-- Node.js LTS (18+ recommended)
-- Package manager: npm
-- Bundler: esbuild (`esbuild.config.mjs`)
-
-## Build commands
+## Commands
 
 ```bash
 npm install
-npm run dev
-npm run build
+npx playwright install chromium
+npm run check
+npm run package
 ```
 
-## Code structure
+## Active architecture
 
+```text
+src/main.ts                         Obsidian lifecycle and processor
+src/notation/parseDocument.ts       v2 position/grid parser
+src/notation/directives.ts          meter, grid, feel and hairpin headers
+src/notation/rhythm.ts              per-voice timelines, rests and beams
+src/notation/engravingLayout.ts     responsive notation columns and systems
+src/renderer/renderDocument.ts      stable renderer facade
+src/renderer/engraving.ts           SVG music engraving
+src/renderer/renderDiagnostics.ts   source-aware diagnostics panel
 ```
-src/
-  main.ts              # Plugin lifecycle
-  parser.ts            # Parse drum blocks + headers
-  settings.ts          # Plugin settings
-  types.ts             # Shared types and notation model
-  notation/layout/     # Layout + beam grouping
-  renderer/            # SVG rendering pipeline
-  renderer/notes/      # Instrument-specific renderers
-```
-
-## Current capabilities
-
-- `drums` code block rendering
-- Time signature headers (inline or inside block)
-- Subdivision overrides (grid/subdiv)
-- Beat-aware beam grouping
-- SVG subdivision labels
-
-## Current gaps
-
-- Secondary beams for 16ths
-- Articulations (ghost, accent, open hat)
-- Cymbals and toms
-- Playback and export
 
 ## Conventions
 
-- Keep `main.ts` minimal (wire up parsing + rendering)
-- Split functionality across modules
-- Avoid heavy dependencies
-- Keep rendering fast and deterministic
+- Keep `main.ts` minimal and keep musical logic out of the Obsidian lifecycle.
+- Do not reintroduce the removed legacy pattern model or renderer.
+- Avoid heavy runtime dependencies; development-only visual tooling is acceptable.
+- Keep rendering deterministic and destroy observers/listeners in plugin lifecycle cleanup.
+- Do not commit generated `main.js`, `release/`, `.visual-test/`, or Playwright reports.
 
-## Testing
+## Testing and release
 
-- Use [TEST_PATTERNS.md](TEST_PATTERNS.md) in an Obsidian note
-- Verify labels, beams, and grid alignment for multiple meters
-
-## Release notes
-
-- Release artifacts: `main.js`, `manifest.json`, `styles.css`, `Bravura.woff2`
-- Do not commit build artifacts
+- Unit tests cover parser, timeline, layout, SVG structure and SMuFL declarations.
+- Playwright snapshots use bundled Bravura in pinned Chromium across themes and responsive widths.
+- Manual Obsidian checks live in `TEST_PATTERNS.md` and cover Live Preview and Reading View.
+- Release artifacts are `main.js`, `manifest.json`, `styles.css`, and `Bravura.woff2`.

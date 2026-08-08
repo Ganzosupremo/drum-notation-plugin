@@ -7,6 +7,7 @@ export type GlyphName =
     | "noteheadPlusBlack"
     | "noteheadCircleX"
     | "noteheadDiamondBlack"
+    | "noteheadSlashedBlack1"
     | "articAccentAbove"
     | "restWhole"
     | "restHalf"
@@ -29,6 +30,7 @@ export const GLYPHS: { readonly [K in GlyphName]: string } = {
     noteheadPlusBlack: "\uE0AF",
     noteheadCircleX: "\uE0B3",
     noteheadDiamondBlack: "\uE0DB",
+    noteheadSlashedBlack1: "\uE0CF",
     articAccentAbove: "\uE4A0",
     restWhole: "\uE4E3",
     restHalf: "\uE4E4",

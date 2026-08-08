@@ -140,16 +140,13 @@ H: b1
 
 Expected: the rendered block highlights `rs1` as a technique conflict and `b1` as unsupported on HH. The affected measure is tinted while the remaining attacks still render.
 
-## Legacy migration
-
-```drums
-HH |x-x-x-x-x-x-x-x-|
-SD |----o-------o---|
-BD |o-------o-------|
-```
-
-Expected: rendered as eighth notes with one migration warning, not as a sixteenth grid. Expanding the warning shows the original source and a **Copy v2 syntax** button.
-
 ## Theme and scaling
 
-Repeat the checks in light/dark themes and at 80%, 100%, and 150% notation scale. No notehead, articulation, clef, or lower-voice stem should be clipped.
+Repeat the checks in Live Preview and Reading View using this matrix:
+
+- Light and dark themes.
+- Narrow pane below 520 px, tablet around 768 px, and desktop at 1200 px or wider.
+- Notation scale at 80%, 100%, and 150%.
+- Styles `standard`, `compact`, and `practice`.
+
+Confirm that no notehead, articulation, clef, count label, tuplet, diagnostic, or lower-voice stem is clipped. Mobile must use one measure per system, desktop systems must never exceed four, and dense measures must scroll horizontally instead of compressing collisions.

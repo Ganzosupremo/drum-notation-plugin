@@ -10,19 +10,26 @@ jobs:
     build:
         runs-on: ubuntu-latest
 
-        strategy:
-            matrix:
-                node-version: [20.x, 22.x]
-                # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
         steps:
             - uses: actions/checkout@v4
-            - name: Use Node.js ${{ matrix.node-version }}
+            - name: Use Node.js 22
               uses: actions/setup-node@v4
               with:
-                  node-version: ${{ matrix.node-version }}
+                  node-version: 22.x
                   cache: "npm"
             - run: npm ci
-            - run: npm run build --if-present
+            - run: npx playwright install --with-deps chromium
+            - run: npm run test:unit
+            - run: npm run typecheck
             - run: npm run lint
-
+            - run: npm run build
+            - run: npm run bundle:verify
+            - run: npm run test:visual
+            - run: node scripts/package-release.mjs
+            - uses: actions/upload-artifact@v4
+              if: failure()
+              with:
+                  name: visual-test-report
+                  path: |
+                      playwright-report
+                      test-results

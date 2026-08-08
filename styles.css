@@ -1,8 +1,7 @@
 /*
  * Bravura is a SMuFL-compliant music font by Steinberg.
  * The font file (Bravura.woff2) must be installed alongside this CSS
- * in the plugin directory. On Obsidian desktop the font-face is also
- * injected dynamically by main.js using the correct app:// resource path.
+ * in the plugin directory. Obsidian loads it through this stylesheet.
  */
 @font-face {
     font-family: 'Bravura';
@@ -320,7 +319,6 @@
     opacity: 0.48;
 }
 
-.drum-rimshot-mark,
 .drum-roll-stroke,
 .drum-grace-stem,
 .drum-grace-slash {

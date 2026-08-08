@@ -8,6 +8,7 @@ export default tseslint.config(
 		languageOptions: {
 			globals: {
 				...globals.browser,
+				...globals.node,
 			},
 			parserOptions: {
 				projectService: {
@@ -22,15 +23,31 @@ export default tseslint.config(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		files: ["src/**/*.test.ts", "tests/**/*.ts"],
+		rules: {
+			"@typescript-eslint/no-floating-promises": "off",
+			"@typescript-eslint/no-unnecessary-type-assertion": "off",
+			"obsidianmd/no-nodejs-modules": "off",
+			"obsidianmd/prefer-active-doc": "off",
+			"obsidianmd/prefer-create-el": "off",
+			"obsidianmd/prefer-instanceof": "off",
+		},
+	},
 	globalIgnores([
 		"node_modules",
 		"dist",
+		".visual-test",
+		"playwright-report",
+		"test-results",
+		"release",
 		"esbuild.config.mjs",
 		"eslint.config.js",
 		"version-bump.mjs",
 		"versions.json",
 		"main.js",
-		"src/**/*.test.ts",
-		"src/renderer/renderNotation.ts",
+		"tests/visual/snapshots",
+		"tests/visual/server.mjs",
+		"scripts/*.mjs",
 	]),
 );
