@@ -398,6 +398,24 @@ function countLabels(subdivisions: number): string[] {
     return ["1"];
 }
 
+function subdivisionCountY(document: DrumDocument, measure: DrumMeasure, scale: number, positions: Record<string, number>): number {
+    const upperEvents = measure.events.filter(event => event.voice === "upper");
+    const highestHead = upperEvents.length > 0
+        ? Math.min(...upperEvents.map(event => eventY(event, positions)))
+        : STAFF_MID_Y;
+    const stemCeiling = Math.min(UPPER_BEAM_Y - STAFF_S / 2, highestHead - 23 * scale - STAFF_S / 2);
+    const decorationCounts = new Map<number, number>();
+    upperEvents.filter(event => event.articulation !== "normal").forEach(event => {
+        decorationCounts.set(event.tick, (decorationCounts.get(event.tick) ?? 0) + 1);
+    });
+    const decorationLayers = Math.max(0, ...decorationCounts.values());
+    const decorationClearance = decorationLayers > 0 ? 40 + (decorationLayers - 1) * 10 : 8;
+    const hasTuplets = document.timeSignature.meterType !== "compound"
+        && upperEvents.some(event => event.durationTicks === 4 || event.durationTicks === 8);
+    const upperClearance = Math.max(decorationClearance, hasTuplets ? 42 : 0);
+    return Math.min(21, stemCeiling - (upperClearance + 8) * scale - 3);
+}
+
 function renderMeasure(
     svg: SVGSVGElement,
     document: DrumDocument,
@@ -429,7 +447,7 @@ function renderMeasure(
             labels.forEach((label, offset) => {
                 const tick = beat * TICKS_PER_BEAT + offset * (TICKS_PER_BEAT / measure.subdivisionsPerBeat);
                 const x = layout.xAtTick(tick);
-                svgText(svg, offset === 0 ? (beat + 1).toString() : label, x, 21, "drum-subdivision");
+                svgText(svg, offset === 0 ? (beat + 1).toString() : label, x, subdivisionCountY(document, measure, scale, positions), "drum-subdivision");
             });
         }
     }
@@ -444,7 +462,7 @@ function renderMeasure(
     }
 }
 
-function systemVerticalBounds(document: DrumDocument, measures: DrumMeasure[], scale: number, positions: Record<string, number>): { top: number; height: number } {
+function systemVerticalBounds(document: DrumDocument, measures: DrumMeasure[], scale: number, positions: Record<string, number>, showCount: boolean): { top: number; height: number } {
     const baseBottom = document.style === "compact" ? 142 : document.style === "practice" ? 178 : 155;
     const chordSize = (voice: DrumVoice) => {
         const counts = measures.flatMap(measure => {
@@ -460,7 +478,10 @@ function systemVerticalBounds(document: DrumDocument, measures: DrumMeasure[], s
         && measures.some(measure => measure.events.some(event => event.durationTicks === 4 || event.durationTicks === 8));
     const upperExtent = UPPER_BEAM_Y - (20 + (upperDecorations - 1) * 7) * scale - 8;
     const tupletExtent = hasSimpleTuplets ? UPPER_BEAM_Y - 22 * scale - 8 : 0;
-    const top = Math.floor(Math.min(0, upperExtent, tupletExtent));
+    const countExtent = showCount && measures.length > 0
+        ? Math.min(...measures.map(measure => subdivisionCountY(document, measure, scale, positions) - 14))
+        : 0;
+    const top = Math.floor(Math.min(0, upperExtent, tupletExtent, countExtent));
     const allEvents = measures.flatMap(measure => measure.events);
     const highestHead = allEvents.length > 0 ? Math.min(...allEvents.map(event => eventY(event, positions))) : STAFF_MID_Y;
     const ornamentTop = allEvents.some(event => event.ornament === "flam" || event.ornament === "drag") ? 22 * scale : 0;
@@ -521,7 +542,7 @@ export function renderEngravingDocument(
                 .map(layout => documentModel.measures[layout.measureIndex])
                 .filter((measure): measure is DrumMeasure => measure !== undefined);
             const svgWidth = system.width;
-            const vertical = systemVerticalBounds(documentModel, measures, scale, positions);
+            const vertical = systemVerticalBounds(documentModel, measures, scale, positions, showCount);
             const svgHeight = vertical.height;
             const svg = createSVGElement("svg");
             svg.setAttribute("viewBox", `0 ${vertical.top} ${svgWidth} ${svgHeight}`);

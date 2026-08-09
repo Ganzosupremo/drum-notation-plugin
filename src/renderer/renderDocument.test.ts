@@ -99,6 +99,25 @@ describe("responsive document renderer", () => {
         rendered.destroy();
     });
 
+    test("keeps high-scale counts above accents and open markers", () => {
+        const container = new MockElement("div");
+        const model = parseDrumDocument("4/4\nstyle: practice\nH: 16ths >1 >3 >o4&\nS: 2 4");
+        const rendered = renderDrumDocument(model, container as unknown as HTMLElement, { scale: 1.5 });
+        const elements = descendants(container);
+        const countY = Math.max(...elements
+            .filter(element => element.classList.values.has("drum-subdivision"))
+            .map(element => Number(element.attributes.get("y"))));
+        const accentY = Math.min(...elements
+            .filter(element => element.classList.values.has("drum-glyph-accent"))
+            .map(element => Number(element.attributes.get("y"))));
+        const openTop = Math.min(...elements
+            .filter(element => element.classList.values.has("drum-open-marker"))
+            .map(element => Number(element.attributes.get("cy")) - Number(element.attributes.get("r"))));
+        assert.ok(countY < accentY - 6, "counts must clear accent glyphs");
+        assert.ok(countY < openTop - 6, "counts must clear open hi-hat markers");
+        rendered.destroy();
+    });
+
     test("expands the viewBox at 150 percent scale", () => {
         const container = new MockElement("div");
         const documentModel = parseDrumDocument("meter: 4/4\nHH: eighths\nBD: 1, 3");

@@ -17,14 +17,13 @@ await esbuild.build({
     target: "es2020",
 });
 await copyFile(path.join(root, "styles.css"), path.join(output, "styles.css"));
-await copyFile(path.join(root, "Bravura.woff2"), path.join(output, "Bravura.woff2"));
 await writeFile(path.join(output, "index.html"), `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <link rel="stylesheet" href="/styles.css"><style>
 :root{font-family:system-ui,sans-serif}.theme-light{--background-primary:#fff;--background-secondary:#eee;--text-normal:#222;--text-muted:#666;--text-error:#b42318;--text-warning:#9a6700}.theme-dark{--background-primary:#202020;--background-secondary:#292929;--text-normal:#eee;--text-muted:#aaa;--text-error:#ff8585;--text-warning:#f0b849}body{margin:0;padding:16px;background:var(--background-primary);color:var(--text-normal)}section{margin:0 0 28px}.visual-host{width:100%}h2{font-size:15px;margin:0 0 6px}
 </style></head><body><main id="app"></main><script src="/fixture.js"></script></body></html>`);
 
-const contentTypes = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2" };
+const contentTypes = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
 const server = createServer(async (request, response) => {
     const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
     const file = pathname === "/" ? "index.html" : pathname.slice(1);

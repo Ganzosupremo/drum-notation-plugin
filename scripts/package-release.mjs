@@ -13,15 +13,19 @@ await copyFile(path.join(root, "main.js"), path.join(destination, "main.js"));
 await copyFile(path.join(root, "manifest.json"), path.join(destination, "manifest.json"));
 
 const sourceCss = await readFile(path.join(root, "styles.css"), "utf8");
-const font = await readFile(path.join(root, "Bravura.woff2"));
+const embeddedFontReference = /url\(["']data:font\/woff2;base64,/;
 const fontReference = /url\((['"]?)Bravura\.woff2\1\)/;
-if (!fontReference.test(sourceCss)) {
-    throw new Error("styles.css does not contain the expected Bravura.woff2 reference.");
+let releaseCss = sourceCss;
+if (!embeddedFontReference.test(sourceCss)) {
+    if (!fontReference.test(sourceCss)) {
+        throw new Error("styles.css contains neither embedded Bravura nor the expected Bravura.woff2 reference.");
+    }
+    const font = await readFile(path.join(root, "Bravura.woff2"));
+    releaseCss = sourceCss.replace(
+        fontReference,
+        `url("data:font/woff2;base64,${font.toString("base64")}")`,
+    );
 }
-const releaseCss = sourceCss.replace(
-    fontReference,
-    `url("data:font/woff2;base64,${font.toString("base64")}")`,
-);
 await writeFile(path.join(destination, "styles.css"), releaseCss, "utf8");
 
 const zipEntries = [];
