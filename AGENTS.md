@@ -1,4 +1,4 @@
-# Drum Notation Plugin — Agent Guide
+# Drum Notation Renderer — Agent Guide
 
 ## Project overview
 
@@ -41,4 +41,4 @@ src/renderer/renderDiagnostics.ts   source-aware diagnostics panel
 - Unit tests cover parser, timeline, layout, SVG structure and SMuFL declarations.
 - Playwright snapshots use bundled Bravura in pinned Chromium across themes and responsive widths.
 - Manual Obsidian checks live in `TEST_PATTERNS.md` and cover Live Preview and Reading View.
-- Release artifacts are `main.js`, `manifest.json`, `styles.css`, and `Bravura.woff2`.
+- Release artifacts are `main.js`, `manifest.json`, and a self-contained `styles.css`.

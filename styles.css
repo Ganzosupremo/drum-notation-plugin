@@ -1,7 +1,7 @@
 /*
  * Bravura is a SMuFL-compliant music font by Steinberg.
- * The font file (Bravura.woff2) must be installed alongside this CSS
- * in the plugin directory. Obsidian loads it through this stylesheet.
+ * Development loads Bravura.woff2 beside this file. The packaging script
+ * embeds it into release CSS for offline mobile and Community installs.
  */
 @font-face {
     font-family: 'Bravura';

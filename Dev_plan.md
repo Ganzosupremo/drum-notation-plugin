@@ -1,4 +1,4 @@
-# Drum Notation Plugin — Technical Status
+# Drum Notation Renderer — Technical Status
 
 ## Current pipeline
 
@@ -18,7 +18,7 @@ The public renderer consumes only the v2 AST. The former row-pattern model and c
 - Playwright snapshots using the bundled Bravura font in light/dark themes at 360, 768 and 1200 px.
 - Runtime checks for content outside the SVG viewBox and systems containing more than four measures.
 - Manual checks in Live Preview and Reading View using `TEST_PATTERNS.md`.
-- Production bundle below 250 KiB, excluding `Bravura.woff2`.
+- Production JavaScript bundle below 250 KiB; release CSS embeds Bravura for offline installs.
 
 ## Deferred features
 

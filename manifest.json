@@ -1,6 +1,6 @@
 {
-  "id": "drum-notation-plugin",
-  "name": "Drum Notation Plugin",
+  "id": "drum-notation-renderer",
+  "name": "Drum Notation Renderer",
   "version": "1.0.0",
   "minAppVersion": "1.5.0",
   "description": "Write modern drum grooves as positions or grids and render responsive SVG notation.",

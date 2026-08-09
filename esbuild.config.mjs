@@ -20,7 +20,7 @@ const context = await esbuild.context({
 		js: banner,
 	},
 	absWorkingDir: projectDir,
-	entryPoints: [path.join(projectDir, "src", "main.ts")],
+	entryPoints: ["./src/main.ts"],
 	bundle: true,
 	external: [
 		"obsidian",

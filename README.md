@@ -1,4 +1,4 @@
-# Drum Notation Plugin for Obsidian
+# Drum Notation Renderer for Obsidian
 
 Write drum grooves as musical positions or token grids and render them as responsive SVG drum notation. Version 2 uses a shared timeline, upper/lower voices, chord stems, beat-aware beams, percussion clef, time signature, and automatic system wrapping.
 
@@ -95,6 +95,6 @@ npm run check
 npm run package
 ```
 
-`npm run package` stages `main.js`, `manifest.json`, `styles.css`, and `Bravura.woff2` in `release/`. Generated artifacts are uploaded with releases and are not committed. Unit tests cover parsing, rhythm and layout; Playwright snapshots cover Chromium rendering at mobile, tablet and desktop widths in both themes.
+`npm run package` stages the three Obsidian release assets (`main.js`, `manifest.json`, and a self-contained `styles.css`) in `release/`. Bravura is embedded in the packaged CSS, so mobile installs work offline without a separate font file. The command also creates `drum-notation-renderer-mobile.zip`, ready to extract into `.obsidian/plugins/` on Android, iPhone, or iPad. Generated artifacts are not committed. Unit tests cover parsing, rhythm and layout; Playwright snapshots cover Chromium rendering at mobile, tablet and desktop widths in both themes.
 
 Playback, MIDI, visual editing, and image/PDF export are outside the current scope.
