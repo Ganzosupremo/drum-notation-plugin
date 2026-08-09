@@ -141,11 +141,24 @@ function renderNotehead(svg: SVGSVGElement, event: DrumEvent, x: number, scale: 
     }
 }
 
-function renderOrnament(svg: SVGSVGElement, event: DrumEvent, x: number, y: number, stemEnd: number, scale: number): void {
+function renderOrnament(svg: SVGSVGElement, event: DrumEvent, x: number, y: number, stemEnd: number, scale: number, chordYs: number[]): void {
     if (!event.ornament) return;
     if (event.ornament === "roll") {
         const direction = event.voice === "upper" ? -1 : 1;
-        const centerY = (y + stemEnd) / 2;
+        const strokeHalfHeight = 8 * scale;
+        const noteheadHalfHeight = 5 * scale;
+        const touchingOffset = strokeHalfHeight + noteheadHalfHeight;
+        let centerY = y + direction * touchingOffset;
+        const collidesWithHead = chordYs.some(headY => headY !== y
+            && Math.abs(headY - centerY) < strokeHalfHeight + noteheadHalfHeight + 2 * scale);
+        if (collidesWithHead) {
+            const outwardHead = event.voice === "upper" ? Math.min(...chordYs) : Math.max(...chordYs);
+            centerY = outwardHead + direction * touchingOffset;
+        }
+        const beamClearance = strokeHalfHeight + 2 * scale;
+        centerY = event.voice === "upper"
+            ? Math.max(centerY, stemEnd + beamClearance)
+            : Math.min(centerY, stemEnd - beamClearance);
         for (let index = -1; index <= 1; index++) {
             const slashY = centerY + index * 5 * direction * scale;
             svgLine(svg, x - 5 * scale, slashY + 3 * scale, x + 5 * scale, slashY - 3 * scale, "drum-roll-stroke");
@@ -373,7 +386,7 @@ function renderVoice(
         atom.events.forEach(event => {
             const currentDecoration = event.articulation === "normal" ? 0 : decorationIndex++;
             renderNotehead(svg, event, x, scale, currentDecoration, positions, stemEnd);
-            renderOrnament(svg, event, x, eventY(event, positions), stemEnd, scale);
+            renderOrnament(svg, event, x, eventY(event, positions), stemEnd, scale, ys);
             if (event.tied) {
                 const endX = Math.min(layout.right - 6, layout.xAtTick(event.tick + event.durationTicks));
                 const y = eventY(event, positions) + (voice === "upper" ? 8 : -8) * scale;

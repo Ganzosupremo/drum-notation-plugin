@@ -210,6 +210,29 @@ describe("responsive document renderer", () => {
         rendered.destroy();
     });
 
+    test("places roll strokes against the rolled head and outside colliding chord heads", () => {
+        const singleContainer = new MockElement("div");
+        const single = renderDrumDocument(parseDrumDocument("4/4\nS: rr1"), singleContainer as unknown as HTMLElement);
+        const singleElements = descendants(singleContainer);
+        const snareY = Number(singleElements.find(element => element.attributes.get("data-instrument") === "SD")?.attributes.get("y"));
+        const singleStrokeBottom = Math.max(...singleElements
+            .filter(element => element.classList.values.has("drum-roll-stroke"))
+            .flatMap(element => [Number(element.attributes.get("y1")), Number(element.attributes.get("y2"))]));
+        assert.ok(Math.abs(singleStrokeBottom - (snareY - 5)) <= 1, "the tremolo group should sit against an isolated notehead");
+        single.destroy();
+
+        const chordContainer = new MockElement("div");
+        const chord = renderDrumDocument(parseDrumDocument("4/4\nR: 4ths\nS: rr4"), chordContainer as unknown as HTMLElement);
+        const chordElements = descendants(chordContainer);
+        const rideY = Number(chordElements.find(element => element.attributes.get("data-instrument") === "RC"
+            && element.attributes.get("x") === chordElements.find(candidate => candidate.attributes.get("data-instrument") === "SD")?.attributes.get("x"))?.attributes.get("y"));
+        const chordStrokeBottom = Math.max(...chordElements
+            .filter(element => element.classList.values.has("drum-roll-stroke"))
+            .flatMap(element => [Number(element.attributes.get("y1")), Number(element.attributes.get("y2"))]));
+        assert.ok(chordStrokeBottom <= rideY - 5, "roll strokes must move outside a simultaneous ride head");
+        chord.destroy();
+    });
+
     test("shows the exact failing source token inside the rendered block", () => {
         const container = new MockElement("div");
         const model = parseDrumDocument("4/4\nS: cs1 rs1 2 4");
