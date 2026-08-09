@@ -1,9 +1,8 @@
-import tseslint from 'typescript-eslint';
 import obsidianmd from "eslint-plugin-obsidianmd";
 import globals from "globals";
-import { globalIgnores } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
 
-export default tseslint.config(
+export default defineConfig(
 	{
 		languageOptions: {
 			globals: {
@@ -13,7 +12,7 @@ export default tseslint.config(
 			parserOptions: {
 				projectService: {
 					allowDefaultProject: [
-						'eslint.config.js',
+						'eslint.config.mts',
 						'manifest.json'
 					]
 				},
@@ -32,6 +31,8 @@ export default tseslint.config(
 			"obsidianmd/prefer-active-doc": "off",
 			"obsidianmd/prefer-create-el": "off",
 			"obsidianmd/prefer-instanceof": "off",
+			"obsidianmd/no-global-this": "off",
+			"obsidianmd/prefer-window-timers": "off",
 		},
 	},
 	globalIgnores([

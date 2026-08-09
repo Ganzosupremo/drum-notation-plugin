@@ -1,9 +1,7 @@
 import { DrumDocument } from "../types";
 
 function htmlChild<K extends keyof HTMLElementTagNameMap>(parent: HTMLElement, tag: K, className?: string): HTMLElementTagNameMap[K] {
-    // Tests provide a minimal DOM without Obsidian's activeDocument export.
-    // eslint-disable-next-line obsidianmd/prefer-active-doc
-    const element = document.createElementNS("http://www.w3.org/1999/xhtml", tag) as unknown as HTMLElementTagNameMap[K];
+    const element = parent.ownerDocument.createElementNS("http://www.w3.org/1999/xhtml", tag) as unknown as HTMLElementTagNameMap[K];
     if (className) {
         element.className = className;
         element.classList.add(...className.split(/\s+/));

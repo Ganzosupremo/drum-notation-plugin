@@ -20,6 +20,10 @@ class MockElement {
     clientWidth = 720;
     parent?: MockElement;
 
+    get ownerDocument() {
+        return (globalThis as unknown as { document: Document }).document;
+    }
+
     constructor(readonly tagName: string) {}
 
     setAttribute(name: string, value: string) { this.attributes.set(name, value); }

@@ -36,7 +36,7 @@ const UPPER_BEAM_Y = STAFF_MID_Y - 42;
 const LOWER_BEAM_Y = STAFF_MID_Y + 42;
 
 function svgText(svg: SVGSVGElement, text: string, x: number, y: number, className: string): SVGTextElement {
-    const element = createSVGElement("text");
+    const element = createSVGElement(svg.ownerDocument, "text");
     element.setAttribute("x", x.toString());
     element.setAttribute("y", y.toString());
     element.classList.add(className);
@@ -46,7 +46,7 @@ function svgText(svg: SVGSVGElement, text: string, x: number, y: number, classNa
 }
 
 function svgLine(svg: SVGSVGElement, x1: number, y1: number, x2: number, y2: number, className: string): SVGLineElement {
-    const line = createSVGElement("line");
+    const line = createSVGElement(svg.ownerDocument, "line");
     line.setAttribute("x1", x1.toString());
     line.setAttribute("y1", y1.toString());
     line.setAttribute("x2", x2.toString());
@@ -57,7 +57,7 @@ function svgLine(svg: SVGSVGElement, x1: number, y1: number, x2: number, y2: num
 }
 
 function svgPath(svg: SVGSVGElement, pathData: string, className: string): SVGPathElement {
-    const path = createSVGElement("path");
+    const path = createSVGElement(svg.ownerDocument, "path");
     path.setAttribute("d", pathData);
     path.classList.add(className);
     svg.appendChild(path);
@@ -119,7 +119,7 @@ function renderNotehead(svg: SVGSVGElement, event: DrumEvent, x: number, scale: 
         svgText(svg, ")", x + 9 * scale, y + 3, "drum-note-ghost-paren");
     }
     if (event.articulation === "open" || event.articulation === "accent-open") {
-        const circle = createSVGElement("circle");
+        const circle = createSVGElement(svg.ownerDocument, "circle");
         circle.setAttribute("cx", x.toString());
         const markerY = event.voice === "upper"
             ? (stemTip ?? UPPER_BEAM_Y) - (9 + decorationIndex * 6) * scale
@@ -442,7 +442,7 @@ function renderMeasure(
     svgLine(svg, left, STAFF_MID_Y - 2 * STAFF_S, left, STAFF_MID_Y + 2 * STAFF_S, "drum-bar");
     svgLine(svg, right, STAFF_MID_Y - 2 * STAFF_S, right, STAFF_MID_Y + 2 * STAFF_S, "drum-bar");
     if (!measure.valid) {
-        const marker = createSVGElement("rect");
+        const marker = createSVGElement(svg.ownerDocument, "rect");
         marker.setAttribute("x", left.toString());
         marker.setAttribute("y", (STAFF_MID_Y - 2 * STAFF_S).toString());
         marker.setAttribute("width", width.toString());
@@ -557,7 +557,7 @@ export function renderEngravingDocument(
             const svgWidth = system.width;
             const vertical = systemVerticalBounds(documentModel, measures, scale, positions, showCount);
             const svgHeight = vertical.height;
-            const svg = createSVGElement("svg");
+            const svg = createSVGElement(container.ownerDocument, "svg");
             svg.setAttribute("viewBox", `0 ${vertical.top} ${svgWidth} ${svgHeight}`);
             svg.setAttribute("width", svgWidth > availableWidth ? svgWidth.toString() : "100%");
             svg.setAttribute("height", svgHeight.toString());
@@ -579,10 +579,15 @@ export function renderEngravingDocument(
         });
     };
 
+    const hostWindow = container.ownerDocument.defaultView;
     let frame = 0;
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => {
-        if (frame !== 0) cancelAnimationFrame(frame);
-        frame = requestAnimationFrame(draw);
+        if (!hostWindow) {
+            draw();
+            return;
+        }
+        if (frame !== 0) hostWindow.cancelAnimationFrame(frame);
+        frame = hostWindow.requestAnimationFrame(draw);
     }) : undefined;
     observer?.observe(container);
     draw();
@@ -594,7 +599,7 @@ export function renderEngravingDocument(
         destroy() {
             destroyed = true;
             observer?.disconnect();
-            if (frame !== 0) cancelAnimationFrame(frame);
+            if (frame !== 0) hostWindow?.cancelAnimationFrame(frame);
             wrapper.remove();
         },
         rerender: draw,

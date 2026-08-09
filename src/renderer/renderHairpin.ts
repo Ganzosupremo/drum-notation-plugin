@@ -7,7 +7,7 @@ function addLine(
     x2: number,
     y2: number
 ) {
-    const line = createSVGElement("line");
+    const line = createSVGElement(svg.ownerDocument, "line");
     line.setAttribute("x1", x1.toString());
     line.setAttribute("y1", y1.toString());
     line.setAttribute("x2", x2.toString());
