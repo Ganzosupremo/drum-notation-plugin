@@ -1,4 +1,4 @@
-import { MarkdownRenderChild, Plugin } from "obsidian";
+import { MarkdownRenderChild, normalizePath, Plugin } from "obsidian";
 import { parseDrumDocument } from "./notation/parseDocument";
 import { renderDrumDocument, RenderedDocument } from "./renderer/renderDocument";
 import { DEFAULT_SETTINGS, DrumNotationSettings, DrumNotationSettingTab } from "./settings";
@@ -21,6 +21,7 @@ class DrumRenderChild extends MarkdownRenderChild {
 export default class DrumNotationPlugin extends Plugin {
     settings: DrumNotationSettings = { ...DEFAULT_SETTINGS };
     private readonly renderedDocuments = new Set<RenderedDocument>();
+    private readonly fontStyles = new Set<HTMLStyleElement>();
 
     async onload(): Promise<void> {
         const saved = await this.loadData() as Partial<DrumNotationSettings> | null;
@@ -29,6 +30,10 @@ export default class DrumNotationPlugin extends Plugin {
             ...DEFAULT_SETTINGS.instrumentPositions,
             ...(saved?.instrumentPositions ?? {}),
         };
+        this.installBravuraFont(this.app.workspace.containerEl.ownerDocument);
+        this.registerEvent(this.app.workspace.on("window-open", (_workspaceWindow, window) => {
+            this.installBravuraFont(window.document);
+        }));
         this.addSettingTab(new DrumNotationSettingTab(this.app, this));
 
         this.registerMarkdownCodeBlockProcessor("drums", (source, el, ctx) => {
@@ -64,6 +69,27 @@ export default class DrumNotationPlugin extends Plugin {
         };
     }
 
+    private installBravuraFont(ownerDocument: Document): void {
+        const pluginDirectory = this.manifest.dir;
+        if (!pluginDirectory || ownerDocument.querySelector("style[data-drum-notation-font]")) return;
+        const fontPath = normalizePath(`${pluginDirectory}/Bravura.woff2`);
+        const resourceUrl = this.app.vault.adapter.getResourcePath(fontPath);
+        const style = ownerDocument.createElement("style");
+        style.dataset.drumNotationFont = "true";
+        style.textContent = `@font-face {
+            font-family: "Bravura";
+            src: url(${JSON.stringify(resourceUrl)}) format("woff2");
+            font-weight: normal;
+            font-style: normal;
+            font-display: block;
+        }`;
+        ownerDocument.head.appendChild(style);
+        this.fontStyles.add(style);
+        void ownerDocument.fonts.load("16px Bravura").then(() => {
+            this.refreshRenderers();
+        }).catch(() => { /* The SVG renderer remains usable with its CSS fallback. */ });
+    }
+
     async saveSettings(): Promise<void> {
         await this.saveData(this.settings);
     }
@@ -76,5 +102,7 @@ export default class DrumNotationPlugin extends Plugin {
     onunload(): void {
         this.renderedDocuments.forEach(rendered => rendered.destroy());
         this.renderedDocuments.clear();
+        this.fontStyles.forEach(style => style.remove());
+        this.fontStyles.clear();
     }
 }
