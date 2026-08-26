@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0-beta.2
+
+- Adds selectable `Acústico · Studio` and `Acústico · Heavy` kits backed by curated CC0 recordings.
+- Adds velocity-layer selection, per-sample tuning, decoded-buffer sharing, and synthesized fallback for incomplete mappings.
+- Embeds the acoustic subset in `main.js` so BRAT and manual mobile installations work offline without extra files.
+
 ## 1.1.0-beta.1
 
 - Adds play and stop controls to every rendered drum block.

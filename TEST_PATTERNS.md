@@ -160,4 +160,4 @@ S: 2 4 (3a)
 K: 1 2& 3
 ```
 
-Expected: play starts synthesized drums and an accented metronome click on beat 1, the cursor crosses the measure, BPM changes restart playback at the new speed, open hi-hat rings longer, and stop silences scheduled audio. Disabling Metronome leaves the drum part audible. Starting another rendered block stops this one. Repeat in Reading View and Live Preview on desktop and mobile.
+Expected: the Kit selector shows `Sintetizado`, `Acústico · Studio`, and `Acústico · Heavy`. Test all three. The acoustic kits must load before playback, use a real open hi-hat sample at `4&`, and remain audible after disconnecting the device from the network. Play starts an accented metronome click on beat 1, the cursor crosses the measure, BPM changes restart playback at the new speed, and stop silences scheduled audio. Disabling Metronome leaves the drum part audible. Starting another rendered block stops this one. Repeat in Reading View and Live Preview on desktop and mobile.

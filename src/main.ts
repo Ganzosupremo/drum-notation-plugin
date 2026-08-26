@@ -3,6 +3,7 @@ import { parseDrumDocument } from "./notation/parseDocument";
 import { renderDrumDocument, RenderedDocument } from "./renderer/renderDocument";
 import { DEFAULT_SETTINGS, DrumNotationSettings, DrumNotationSettingTab } from "./settings";
 import { createPlaybackControls, DrumPlaybackManager, PlaybackControls } from "./playback";
+import { bundledPlaybackKits } from "./bundledPlaybackKits";
 
 class DrumRenderChild extends MarkdownRenderChild {
     constructor(
@@ -34,6 +35,7 @@ export default class DrumNotationPlugin extends Plugin {
             ...(saved?.instrumentPositions ?? {}),
         };
         this.addSettingTab(new DrumNotationSettingTab(this.app, this));
+        bundledPlaybackKits().forEach(kit => this.playbackManager.registerKit(kit));
 
         this.registerMarkdownCodeBlockProcessor("drums", (source, el, ctx) => {
             try {

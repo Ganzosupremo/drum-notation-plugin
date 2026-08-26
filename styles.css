@@ -40,11 +40,17 @@
     height: 17px;
 }
 
+.drum-kit-control,
 .drum-tempo-control,
 .drum-metronome-control {
     display: inline-flex;
     align-items: center;
     gap: 5px;
+}
+
+.drum-kit-control select {
+    max-width: 150px;
+    height: 30px;
 }
 
 .drum-tempo-control input {

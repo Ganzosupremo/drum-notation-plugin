@@ -2,19 +2,35 @@ import { setIcon } from "obsidian";
 import { DrumDocument, DrumEvent } from "./types";
 import { buildPlaybackSchedule } from "./playbackSchedule";
 import { createSVGElement } from "./renderer/svgHelper";
+import {
+    defaultPlaybackKitRegistry,
+    KitAudioHost,
+    PlaybackKit,
+    PlaybackKitDescriptor,
+    PlaybackKitRegistry,
+    PlaybackSource,
+} from "./playbackKits";
 
 export interface PlaybackControls {
     destroy(): void;
     stop(): void;
 }
 
-type TrackedSource = AudioBufferSourceNode | OscillatorNode;
-
 export class DrumPlaybackManager {
     private context?: AudioContext;
     private noise?: AudioBuffer;
     private active?: PlaybackControls;
-    private readonly sources = new Set<TrackedSource>();
+    private readonly sources = new Set<PlaybackSource>();
+
+    constructor(private readonly kitRegistry: PlaybackKitRegistry = defaultPlaybackKitRegistry()) {}
+
+    registerKit(kit: PlaybackKit): void {
+        this.kitRegistry.register(kit);
+    }
+
+    kits(): PlaybackKitDescriptor[] {
+        return this.kitRegistry.descriptors();
+    }
 
     claim(controls: PlaybackControls): void {
         if (this.active !== controls) this.active?.stop();
@@ -46,22 +62,29 @@ export class DrumPlaybackManager {
         this.noise = undefined;
     }
 
-    scheduleHit(context: AudioContext, event: DrumEvent, at: number): void {
+    async prepareKit(context: AudioContext, kitId: string): Promise<void> {
+        await (this.kitRegistry.get(kitId) ?? this.kitRegistry.get("synth"))?.prepare(context);
+    }
+
+    scheduleHit(context: AudioContext, event: DrumEvent, at: number, kitId: string): void {
+        const kit = this.kitRegistry.get(kitId) ?? this.kitRegistry.get("synth");
+        if (!kit) return;
+        const host = this.audioHost(context);
         const velocity = event.articulation === "ghost" ? 0.38
             : event.articulation === "accent" || event.articulation === "accent-open" ? 1.15 : 0.82;
         const graceSpacing = 0.055;
-        if (event.ornament === "flam") this.hit(context, event.instrument, at - graceSpacing, velocity * 0.48, event.technique, event.articulation);
+        if (event.ornament === "flam") kit.hit(host, event, at - graceSpacing, velocity * 0.48);
         if (event.ornament === "drag") {
-            this.hit(context, event.instrument, at - graceSpacing * 1.7, velocity * 0.38, event.technique, event.articulation);
-            this.hit(context, event.instrument, at - graceSpacing * 0.8, velocity * 0.44, event.technique, event.articulation);
+            kit.hit(host, event, at - graceSpacing * 1.7, velocity * 0.38);
+            kit.hit(host, event, at - graceSpacing * 0.8, velocity * 0.44);
         }
         if (event.ornament === "roll") {
-            this.hit(context, event.instrument, at, velocity * 0.72, event.technique, event.articulation);
-            this.hit(context, event.instrument, at + 0.045, velocity * 0.72, event.technique, event.articulation);
-            this.hit(context, event.instrument, at + 0.09, velocity * 0.72, event.technique, event.articulation);
+            kit.hit(host, event, at, velocity * 0.72);
+            kit.hit(host, event, at + 0.045, velocity * 0.72);
+            kit.hit(host, event, at + 0.09, velocity * 0.72);
             return;
         }
-        this.hit(context, event.instrument, at, velocity, event.technique, event.articulation);
+        kit.hit(host, event, at, velocity);
     }
 
     scheduleClick(context: AudioContext, at: number, accent: boolean): void {
@@ -77,7 +100,7 @@ export class DrumPlaybackManager {
         this.track(oscillator);
     }
 
-    private track(source: TrackedSource): void {
+    private track(source: PlaybackSource): void {
         this.sources.add(source);
         source.addEventListener("ended", () => this.sources.delete(source), { once: true });
     }
@@ -91,88 +114,13 @@ export class DrumPlaybackManager {
         return buffer;
     }
 
-    private hit(
-        context: AudioContext,
-        instrument: string,
-        at: number,
-        velocity: number,
-        technique?: DrumEvent["technique"],
-        articulation?: DrumEvent["articulation"],
-    ): void {
-        const safeAt = Math.max(context.currentTime, at);
-        if (instrument === "BD") {
-            this.tonalHit(context, safeAt, 145, 48, 0.24, 0.62 * velocity);
-            return;
-        }
-        const tomFrequency = instrument === "HT" ? 210 : instrument === "MT" ? 155 : instrument === "FT" ? 105 : undefined;
-        if (tomFrequency) {
-            this.tonalHit(context, safeAt, tomFrequency * 1.35, tomFrequency, 0.32, 0.42 * velocity);
-            return;
-        }
-        if (instrument === "SD") {
-            if (technique === "cross-stick") {
-                this.tonalHit(context, safeAt, 950, 620, 0.045, 0.28 * velocity, "triangle");
-                return;
-            }
-            this.noiseHit(context, safeAt, technique === "rimshot" ? 1200 : 850, 0.16, 0.34 * velocity, "bandpass");
-            this.tonalHit(context, safeAt, technique === "rimshot" ? 230 : 185, 165, 0.11, 0.18 * velocity, "triangle");
-            return;
-        }
-        if (instrument === "HH" || instrument === "HF") {
-            const open = instrument === "HH" && (articulation === "open" || articulation === "accent-open");
-            this.noiseHit(context, safeAt, 6500, open ? 0.42 : 0.07, 0.17 * velocity, "highpass");
-            return;
-        }
-        if (instrument === "RC" && technique === "bell") {
-            this.tonalHit(context, safeAt, 1250, 980, 0.25, 0.2 * velocity, "triangle");
-            return;
-        }
-        this.noiseHit(context, safeAt, instrument === "RC" ? 4200 : 3600, instrument === "RC" ? 0.38 : 0.55, 0.2 * velocity, "highpass");
-    }
-
-    private tonalHit(
-        context: AudioContext,
-        at: number,
-        startFrequency: number,
-        endFrequency: number,
-        duration: number,
-        volume: number,
-        type: OscillatorType = "sine",
-    ): void {
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        oscillator.type = type;
-        oscillator.frequency.setValueAtTime(startFrequency, at);
-        oscillator.frequency.exponentialRampToValueAtTime(endFrequency, at + Math.min(0.08, duration));
-        gain.gain.setValueAtTime(Math.max(0.0001, volume), at);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + duration);
-        oscillator.connect(gain).connect(context.destination);
-        oscillator.start(at);
-        oscillator.stop(at + duration + 0.01);
-        this.track(oscillator);
-    }
-
-    private noiseHit(
-        context: AudioContext,
-        at: number,
-        frequency: number,
-        duration: number,
-        volume: number,
-        filterType: BiquadFilterType,
-    ): void {
-        const source = context.createBufferSource();
-        const filter = context.createBiquadFilter();
-        const gain = context.createGain();
-        source.buffer = this.noiseBuffer(context);
-        filter.type = filterType;
-        filter.frequency.setValueAtTime(frequency, at);
-        filter.Q.setValueAtTime(filterType === "bandpass" ? 0.8 : 0.3, at);
-        gain.gain.setValueAtTime(Math.max(0.0001, volume), at);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + duration);
-        source.connect(filter).connect(gain).connect(context.destination);
-        source.start(at);
-        source.stop(at + duration + 0.01);
-        this.track(source);
+    private audioHost(context: AudioContext): KitAudioHost {
+        return {
+            context,
+            destination: context.destination,
+            noiseBuffer: () => this.noiseBuffer(context),
+            track: source => this.track(source),
+        };
     }
 }
 
@@ -184,6 +132,12 @@ export function createPlaybackControls(
     const controls = container.createDiv({ cls: "drum-playback-controls" });
     const playButton = controls.createEl("button", { cls: "drum-playback-button", attr: { type: "button", "aria-label": "Play drum notation" } });
     setIcon(playButton, "play");
+    const kitLabel = controls.createEl("label", { cls: "drum-kit-control" });
+    kitLabel.createSpan({ text: "Kit" });
+    const kitSelect = kitLabel.createEl("select", { attr: { "aria-label": "Playback kit" } });
+    const availableKits = manager.kits();
+    availableKits.forEach(kit => kitSelect.createEl("option", { text: kit.label, attr: { value: kit.id } }));
+    kitSelect.value = availableKits[0]?.id ?? "synth";
     const tempoLabel = controls.createEl("label", { cls: "drum-tempo-control" });
     tempoLabel.createSpan({ text: "BPM" });
     const tempoInput = tempoLabel.createEl("input", {
@@ -265,9 +219,11 @@ export function createPlaybackControls(
         manager.claim(api);
         try {
             context = await manager.audioContext();
+            status.textContent = "Cargando kit…";
+            await manager.prepareKit(context, kitSelect.value);
         } catch {
             playing = false;
-            status.textContent = "Audio no disponible";
+            status.textContent = "Kit no disponible";
             manager.release(api);
             return;
         }
@@ -276,7 +232,7 @@ export function createPlaybackControls(
         startTime = context.currentTime + 0.06;
         buildPlaybackSchedule(documentModel, tempo, metronomeInput.checked).forEach(item => {
             const at = startTime + item.timeSeconds;
-            if (item.kind === "hit") manager.scheduleHit(context!, item.event, at);
+            if (item.kind === "hit") manager.scheduleHit(context!, item.event, at, kitSelect.value);
             else manager.scheduleClick(context!, at, item.accent);
         });
         setIcon(playButton, "square");
@@ -299,6 +255,12 @@ export function createPlaybackControls(
     tempoInput.addEventListener("change", () => {
         const tempo = Math.max(20, Math.min(300, Number.parseInt(tempoInput.value, 10) || documentModel.tempo));
         tempoInput.value = tempo.toString();
+        if (playing) {
+            stop();
+            void play();
+        }
+    });
+    kitSelect.addEventListener("change", () => {
         if (playing) {
             stop();
             void play();

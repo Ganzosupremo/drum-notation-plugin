@@ -4,7 +4,10 @@ import path from "node:path";
 const root = path.resolve(import.meta.dirname, "..");
 const bundle = path.join(root, "main.js");
 const { size } = await stat(bundle);
-const limit = 250 * 1024;
+// BRAT only installs main.js, manifest.json, and styles.css. The curated CC0
+// acoustic one-shots are therefore embedded in main.js so playback stays
+// available offline on desktop and mobile.
+const limit = 2.5 * 1024 * 1024;
 if (size >= limit) throw new Error(`main.js is ${size} bytes; limit is ${limit} bytes.`);
 const source = await readFile(bundle, "utf8");
 const forbidden = ["glyphnames.json", "glyphsWithAnchors.json", "classes.json", "ranges.json"];

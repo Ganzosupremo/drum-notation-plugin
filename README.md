@@ -89,9 +89,11 @@ Diagnostics appear inside the rendered block with the exact source token highlig
 
 ## Playback and metronome
 
-Every rendered block includes play/stop, BPM and metronome controls. Playback uses lightweight synthesized drum sounds, follows accents and ghost notes, performs flam/drag/roll ornaments, and delays eighth-note offbeats when `feel: swing` is active. A moving cursor tracks the current position in the score.
+Every rendered block includes play/stop, kit, BPM and metronome controls. Three kits are available: `Sintetizado`, `Acústico · Studio`, and `Acústico · Heavy`. The acoustic presets use embedded CC0 samples, work offline after a BRAT install, and cover kick, snare, cross-stick, closed/open/pedal hi-hat, three tom pitches, ride/bell, crash, china, and splash. Playback follows accents and ghost notes, performs flam/drag/roll ornaments, and delays eighth-note offbeats when `feel: swing` is active. A moving cursor tracks the current position in the score.
 
 Set a block's initial tempo with `tempo: 120` or `bpm: 120`. Changing BPM in the controls affects the current rendered block without rewriting the note. Starting a different block stops the one that is already playing.
+
+Playback kits are registered independently from the transport. A kit may synthesize audio or load cached samples, provide velocity layers and playback-rate tuning, and override individual sounds with keys such as `SD:rimshot`, `SD:cross-stick`, `RC:bell`, and `HH:open`. Missing or unreadable samples fall back to the synthesized kit so partial kits remain usable. See `SAMPLE_KITS.md` for the integration contract and sample provenance.
 
 ## Development and release
 
@@ -102,6 +104,6 @@ npm run check
 npm run package
 ```
 
-`npm run package` stages the three Obsidian release assets (`main.js`, `manifest.json`, and a self-contained `styles.css`) in `release/`. Bravura is embedded in the packaged CSS, so mobile installs work offline without a separate font file. The command also creates `drum-notation-renderer-mobile.zip`, ready to extract into `.obsidian/plugins/` on Android, iPhone, or iPad. Generated artifacts are not committed. Unit tests cover parsing, rhythm and layout; Playwright snapshots cover Chromium rendering at mobile, tablet and desktop widths in both themes.
+`npm run package` stages the three Obsidian release assets (`main.js`, `manifest.json`, and a self-contained `styles.css`) in `release/`. Bravura is embedded in the packaged CSS and the curated drum samples are embedded in `main.js`, because BRAT only installs the three standard plugin files. Mobile and desktop playback therefore work offline without extra assets. The command also creates `drum-notation-renderer-mobile.zip`, ready to extract into `.obsidian/plugins/` on Android, iPhone, or iPad. Generated artifacts are not committed. Unit tests cover parsing, rhythm and layout; Playwright snapshots cover Chromium rendering at mobile, tablet and desktop widths in both themes.
 
-MIDI, visual editing, sampled drum kits, and image/PDF export are outside the current scope.
+MIDI, visual editing, user-imported sample folders, and image/PDF export are outside the current scope.

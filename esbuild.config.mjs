@@ -42,6 +42,10 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
+	loader: {
+		".flac": "binary",
+		".wav": "binary",
+	},
 	outfile: "main.js",
 	minify: prod,
 });
