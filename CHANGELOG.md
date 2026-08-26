@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0-beta.1
+
+- Adds play and stop controls to every rendered drum block.
+- Adds synthesized drum playback for kicks, snares, toms, hi-hats and cymbals, including accents, ghost notes and ornaments.
+- Adds an optional accented metronome, live BPM control and `tempo:`/`bpm:` block directives.
+- Adds swing-aware scheduling and a moving score cursor.
+- Stops playback cleanly when another block starts or the plugin unloads.
+
 ## 1.0.1
 
 - Fixes automated review errors by creating HTML and SVG elements from their owning document.
