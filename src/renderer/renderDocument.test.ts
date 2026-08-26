@@ -66,6 +66,16 @@ describe("responsive document renderer", () => {
         rendered.destroy();
     });
 
+    test("renders one playback cursor anchor per measure", () => {
+        const container = new MockElement("div");
+        const documentModel = parseDrumDocument("4/4\nH: 8ths | 8ths\nK: 1 3 | 1 3");
+        const rendered = renderDrumDocument(documentModel, container as unknown as HTMLElement);
+        const anchors = descendants(container).filter(element => element.classList.values.has("drum-measure-anchor"));
+        assert.deepEqual(anchors.map(anchor => anchor.attributes.get("data-measure")), ["0", "1"]);
+        assert.ok(anchors.every(anchor => anchor.attributes.has("data-left") && anchor.attributes.has("data-right")));
+        rendered.destroy();
+    });
+
     test("renders compact aliases, decorations and repeats through the shared layout", () => {
         const container = new MockElement("div");
         const documentModel = parseDrumDocument("4/4\nR: 8ths >1 >3 x2\nS: 2 4 (3a) | %\nK: 1 2& 3 | %");

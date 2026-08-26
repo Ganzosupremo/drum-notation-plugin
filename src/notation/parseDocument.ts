@@ -22,7 +22,7 @@ import {
     supportsTechnique,
 } from "./instruments";
 
-const HEADER = /^(?:time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution|feel|swing|style|count|labels|grouping|positions)\b/i;
+const HEADER = /^(?:time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution|feel|swing|tempo|bpm|style|count|labels|grouping|positions)\b/i;
 const QUARTERS = [0];
 const EIGHTHS = [0, 6];
 const SIXTEENTHS = [0, 3, 6, 9];
@@ -578,6 +578,7 @@ export function parseDrumDocument(source: string, headerLine?: string, defaultBe
         instruments,
         diagnostics,
         feel: directives.feel,
+        tempo: directives.tempo ?? 100,
         style,
         showCount: boolDirective(directiveSource, "count") ?? style === "practice",
         showLabels: boolDirective(directiveSource, "labels"),

@@ -78,6 +78,7 @@ labels: true       # show the instrument legend
 feel: swing
 grouping: 3+2      # optional beam grouping; values must add up to the meter numerator
 positions: CH=-7, SP=-6, SD=-1  # half-space steps from the middle line
+tempo: 100                       # playback pulse in BPM (20–300)
 ```
 
 Regular simple meters group beams by pulse, 5/4 defaults to `3+2`, and compound meters use groups of three eighth-note units. Primary beams may cross short internal rests, while larger rests and grouping boundaries break them. Simple-meter triplets show a `3`; compound pulses are treated as natural ternary groups.
@@ -85,6 +86,12 @@ Regular simple meters group beams by pulse, 5/4 defaults to `3+2`, and compound 
 The renderer displays percussion clef and time signature by default. Musical elements at the same tick share a column, and spacing expands for dense rhythms, ghosts, flags, dots, and rests. Systems are justified to the pane width, contain at most four measures, and use one measure below 520 px. An overfull dense measure keeps its readable natural width and can scroll horizontally.
 
 Diagnostics appear inside the rendered block with the exact source token highlighted. Deterministic corrections can be copied as a corrected block. The plugin never changes the note automatically.
+
+## Playback and metronome
+
+Every rendered block includes play/stop, BPM and metronome controls. Playback uses lightweight synthesized drum sounds, follows accents and ghost notes, performs flam/drag/roll ornaments, and delays eighth-note offbeats when `feel: swing` is active. A moving cursor tracks the current position in the score.
+
+Set a block's initial tempo with `tempo: 120` or `bpm: 120`. Changing BPM in the controls affects the current rendered block without rewriting the note. Starting a different block stops the one that is already playing.
 
 ## Development and release
 
@@ -97,4 +104,4 @@ npm run package
 
 `npm run package` stages the three Obsidian release assets (`main.js`, `manifest.json`, and a self-contained `styles.css`) in `release/`. Bravura is embedded in the packaged CSS, so mobile installs work offline without a separate font file. The command also creates `drum-notation-renderer-mobile.zip`, ready to extract into `.obsidian/plugins/` on Android, iPhone, or iPad. Generated artifacts are not committed. Unit tests cover parsing, rhythm and layout; Playwright snapshots cover Chromium rendering at mobile, tablet and desktop widths in both themes.
 
-Playback, MIDI, visual editing, and image/PDF export are outside the current scope.
+MIDI, visual editing, sampled drum kits, and image/PDF export are outside the current scope.

@@ -156,6 +156,7 @@ export interface DrumDocument {
     instruments: InstrumentVoice[];
     diagnostics: DrumDiagnostic[];
     feel?: "straight" | "swing" | "triplet";
+    tempo: number;
     style: NotationStyle;
     showCount: boolean;
     showLabels?: boolean;

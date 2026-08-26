@@ -439,7 +439,11 @@ function renderMeasure(
     positions: Record<string, number>,
 ): void {
     const { left, right, width } = layout;
-    svgLine(svg, left, STAFF_MID_Y - 2 * STAFF_S, left, STAFF_MID_Y + 2 * STAFF_S, "drum-bar");
+    const measureAnchor = svgLine(svg, left, STAFF_MID_Y - 2 * STAFF_S, left, STAFF_MID_Y + 2 * STAFF_S, "drum-bar");
+    measureAnchor.classList.add("drum-measure-anchor");
+    measureAnchor.setAttribute("data-measure", measure.index.toString());
+    measureAnchor.setAttribute("data-left", left.toString());
+    measureAnchor.setAttribute("data-right", right.toString());
     svgLine(svg, right, STAFF_MID_Y - 2 * STAFF_S, right, STAFF_MID_Y + 2 * STAFF_S, "drum-bar");
     if (!measure.valid) {
         const marker = createSVGElement(svg.ownerDocument, "rect");

@@ -2,17 +2,20 @@ import { MarkdownRenderChild, Plugin } from "obsidian";
 import { parseDrumDocument } from "./notation/parseDocument";
 import { renderDrumDocument, RenderedDocument } from "./renderer/renderDocument";
 import { DEFAULT_SETTINGS, DrumNotationSettings, DrumNotationSettingTab } from "./settings";
+import { createPlaybackControls, DrumPlaybackManager, PlaybackControls } from "./playback";
 
 class DrumRenderChild extends MarkdownRenderChild {
     constructor(
         containerEl: HTMLElement,
         private readonly rendered: RenderedDocument,
+        private readonly playback: PlaybackControls,
         private readonly registry: Set<RenderedDocument>,
     ) {
         super(containerEl);
     }
 
     onunload(): void {
+        this.playback.destroy();
         this.rendered.destroy();
         this.registry.delete(this.rendered);
     }
@@ -21,6 +24,7 @@ class DrumRenderChild extends MarkdownRenderChild {
 export default class DrumNotationPlugin extends Plugin {
     settings: DrumNotationSettings = { ...DEFAULT_SETTINGS };
     private readonly renderedDocuments = new Set<RenderedDocument>();
+    private readonly playbackManager = new DrumPlaybackManager();
 
     async onload(): Promise<void> {
         const saved = await this.loadData() as Partial<DrumNotationSettings> | null;
@@ -42,9 +46,10 @@ export default class DrumNotationPlugin extends Plugin {
                     headerLine,
                     this.settings.beatsPerBar,
                 );
+                const playback = createPlaybackControls(documentModel, el, this.playbackManager);
                 const rendered = renderDrumDocument(documentModel, el, this.renderOptions());
                 this.renderedDocuments.add(rendered);
-                ctx.addChild(new DrumRenderChild(el, rendered, this.renderedDocuments));
+                ctx.addChild(new DrumRenderChild(el, rendered, playback, this.renderedDocuments));
             } catch (error) {
                 const message = error instanceof Error ? error.message : "Unknown error";
                 el.createEl("p", {
@@ -74,6 +79,7 @@ export default class DrumNotationPlugin extends Plugin {
     }
 
     onunload(): void {
+        this.playbackManager.destroy();
         this.renderedDocuments.forEach(rendered => rendered.destroy());
         this.renderedDocuments.clear();
     }

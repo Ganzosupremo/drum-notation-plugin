@@ -5,6 +5,7 @@ export interface ParsedDirectives {
     timeSignature?: TimeSignature;
     subdivisionsPerBeat?: number;
     feel?: "straight" | "swing" | "triplet";
+    tempo?: number;
     hairpinPattern?: string;
     warnings: DirectiveWarning[];
 }
@@ -47,7 +48,7 @@ function subdivisionValue(value: string): number | undefined {
 }
 
 function splitInlineHeader(header: string): string[] {
-    const keyword = /\b(time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution|feel|swing)\b/gi;
+    const keyword = /\b(time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution|feel|swing|tempo|bpm)\b/gi;
     const starts = [...header.matchAll(keyword)].map(match => match.index ?? 0);
     if (starts.length === 0) return [header];
     return starts.map((start, index) => header.slice(start, starts[index + 1] ?? header.length).trim()).filter(Boolean);
@@ -60,10 +61,16 @@ function parseDirectiveLine(line: string, state: DirectiveState): string | undef
         state.feel = "swing";
         return undefined;
     }
-    const match = line.match(/^(time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution|feel|swing)\s*(?:[:=]|\s)\s*(.+)$/i);
+    const match = line.match(/^(time|timesig|timesignature|meter|ts|beatsperbar|beats-per-bar|beats|bpb|subdivisions|subdivision|subdiv|grid|resolution|feel|swing|tempo|bpm)\s*(?:[:=]|\s)\s*(.+)$/i);
     if (!match?.[1] || !match[2]) return undefined;
     const key = match[1].toLowerCase();
     const value = match[2].trim();
+    if (key === "tempo" || key === "bpm") {
+        const tempo = Number(value);
+        if (!Number.isInteger(tempo) || tempo < 20 || tempo > 300) return `Invalid tempo "${value}": use a whole number from 20 to 300 BPM`;
+        state.tempo = tempo;
+        return undefined;
+    }
     if (["time", "timesig", "timesignature", "meter", "ts"].includes(key)) {
         const meter = value.match(/^(\d+)\s*\/\s*(\d+)$/);
         if (!meter?.[1] || !meter[2]) return `Malformed time signature: "${value}"`;

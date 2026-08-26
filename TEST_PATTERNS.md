@@ -150,3 +150,14 @@ Repeat the checks in Live Preview and Reading View using this matrix:
 - Styles `standard`, `compact`, and `practice`.
 
 Confirm that no notehead, articulation, clef, count label, tuplet, diagnostic, or lower-voice stem is clipped. Mobile must use one measure per system, desktop systems must never exceed four, and dense measures must scroll horizontally instead of compressing collisions.
+## Playback and metronome
+
+```drums
+tempo: 100
+4/4
+H: 8ths o4&
+S: 2 4 (3a)
+K: 1 2& 3
+```
+
+Expected: play starts synthesized drums and an accented metronome click on beat 1, the cursor crosses the measure, BPM changes restart playback at the new speed, open hi-hat rings longer, and stop silences scheduled audio. Disabling Metronome leaves the drum part audible. Starting another rendered block stops this one. Repeat in Reading View and Live Preview on desktop and mobile.

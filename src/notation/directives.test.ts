@@ -13,11 +13,17 @@ describe("notation directives", () => {
     });
 
     test("parses aliases and multiple fence-header directives", () => {
-        const parsed = parseDirectives("feel: straight", "time 9/8 subdiv triplets");
+        const parsed = parseDirectives("feel: straight", "time 9/8 subdiv triplets tempo 126");
         assert.equal(parsed.timeSignature?.meterType, "compound");
         assert.equal(parsed.timeSignature?.beatsPerBar, 3);
         assert.equal(parsed.subdivisionsPerBeat, 3);
         assert.equal(parsed.feel, "straight");
+        assert.equal(parsed.tempo, 126);
+    });
+
+    test("validates playback tempo", () => {
+        assert.equal(parseDirectives("bpm: 72").tempo, 72);
+        assert.match(parseDirectives("tempo: 301").warnings[0]?.message ?? "", /20 to 300/);
     });
 
     test("derives triplet subdivision and hairpins", () => {

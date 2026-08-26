@@ -17,6 +17,77 @@
     color: var(--text-normal);
 }
 
+.drum-playback-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 4px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+}
+
+.drum-playback-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 30px;
+    padding: 0;
+}
+
+.drum-playback-button svg {
+    width: 17px;
+    height: 17px;
+}
+
+.drum-tempo-control,
+.drum-metronome-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.drum-tempo-control input {
+    width: 62px;
+    height: 30px;
+    padding: 2px 5px;
+}
+
+.drum-metronome-control {
+    cursor: pointer;
+    user-select: none;
+}
+
+.drum-playback-status {
+    min-width: 84px;
+    margin-inline-start: auto;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+}
+
+.drum-playback-cursor {
+    display: none;
+    stroke: var(--interactive-accent);
+    stroke-width: 2;
+    pointer-events: none;
+}
+
+.drum-playback-cursor.is-active {
+    display: initial;
+}
+
+@media (max-width: 480px) {
+    .drum-playback-controls {
+        flex-wrap: wrap;
+    }
+
+    .drum-playback-status {
+        flex-basis: 100%;
+        min-width: 0;
+        text-align: start;
+    }
+}
+
 .drum-warning {
     background: var(--background-secondary);
     color: var(--text-warning, var(--text-normal));
