@@ -40,6 +40,20 @@
     height: 17px;
 }
 
+.drum-kit-preview-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+}
+
+.drum-kit-preview-button svg {
+    width: 15px;
+    height: 15px;
+}
+
 .drum-kit-control,
 .drum-tempo-control,
 .drum-metronome-control {

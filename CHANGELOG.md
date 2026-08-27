@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0-beta.3
+
+- Adds persistent 0%-150% playback-volume controls for every instrument.
+- Rebalances the default mix by lowering hi-hat, ride, and other cymbals relative to kick and snare.
+- Applies the same instrument mix to synthesized and acoustic kits, including true 0% mute and a reset-all action.
+- Adds an independent metronome volume plus separately selectable and previewable first-beat and regular-beat voices.
+- Adds high/low woodblock, cowbell, bongo and conga metronome voices, along with click, clave, rimshot and shaker options.
+- Adds the `Acústico · Crispy` kit, built around a brighter, tighter version of the hard acoustic snare sample.
+
 ## 1.1.0-beta.2
 
 - Adds selectable `Acústico · Studio` and `Acústico · Heavy` kits backed by curated CC0 recordings.

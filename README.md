@@ -89,9 +89,13 @@ Diagnostics appear inside the rendered block with the exact source token highlig
 
 ## Playback and metronome
 
-Every rendered block includes play/stop, kit, BPM and metronome controls. Three kits are available: `Sintetizado`, `Acústico · Studio`, and `Acústico · Heavy`. The acoustic presets use embedded CC0 samples, work offline after a BRAT install, and cover kick, snare, cross-stick, closed/open/pedal hi-hat, three tom pitches, ride/bell, crash, china, and splash. Playback follows accents and ghost notes, performs flam/drag/roll ornaments, and delays eighth-note offbeats when `feel: swing` is active. A moving cursor tracks the current position in the score.
+Every rendered block includes play/stop, kit, BPM and metronome controls. Four kits are available: `Sintetizado`, `Acústico · Studio`, `Acústico · Heavy`, and `Acústico · Crispy`. The Crispy preset uses a slightly brighter, tighter tuning around the hard snare recording. The speaker beside the kit selector plays a short kit audition. The acoustic presets use embedded CC0 samples, work offline after a BRAT install, and cover kick, snare, cross-stick, closed/open/pedal hi-hat, three tom pitches, ride/bell, crash, china, and splash. Playback follows accents and ghost notes, performs flam/drag/roll ornaments, and delays eighth-note offbeats when `feel: swing` is active. A moving cursor tracks the current position in the score.
 
 Set a block's initial tempo with `tempo: 120` or `bpm: 120`. Changing BPM in the controls affects the current rendered block without rewriting the note. Starting a different block stops the one that is already playing.
+
+Plugin settings include an independent 0%-150% playback volume for every instrument. The default mix keeps kick and snare at 100%, lowers hi-hat to 45% and ride to 50%, and moderates the other cymbals. These levels apply to synthesized and acoustic kits and may be reset together.
+
+The metronome has its own 0%-150% volume control and independent selectors for the accented first beat and regular beats. Available synthesized percussion voices include high/low click, woodblock, cowbell, bongo and conga, plus clave, rimshot and shaker. A speaker button beside each selector previews the exact voice immediately; the default pair is high/low woodblock.
 
 Playback kits are registered independently from the transport. A kit may synthesize audio or load cached samples, provide velocity layers and playback-rate tuning, and override individual sounds with keys such as `SD:rimshot`, `SD:cross-stick`, `RC:bell`, and `HH:open`. Missing or unreadable samples fall back to the synthesized kit so partial kits remain usable. See `SAMPLE_KITS.md` for the integration contract and sample provenance.
 

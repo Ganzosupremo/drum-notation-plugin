@@ -2,6 +2,15 @@ import { setIcon } from "obsidian";
 import { DrumDocument, DrumEvent } from "./types";
 import { buildPlaybackSchedule } from "./playbackSchedule";
 import { createSVGElement } from "./renderer/svgHelper";
+import { defaultInstrumentVolumes, instrumentVolumeGain, normalizeInstrumentVolumes } from "./playbackMix";
+import {
+    DEFAULT_METRONOME_ACCENT_VOICE,
+    DEFAULT_METRONOME_BEAT_VOICE,
+    DEFAULT_METRONOME_VOLUME,
+    normalizeMetronomeVoice,
+    normalizeMetronomeVolume,
+    scheduleMetronomeVoice,
+} from "./metronome";
 import {
     defaultPlaybackKitRegistry,
     KitAudioHost,
@@ -21,6 +30,10 @@ export class DrumPlaybackManager {
     private noise?: AudioBuffer;
     private active?: PlaybackControls;
     private readonly sources = new Set<PlaybackSource>();
+    private instrumentVolumes = defaultInstrumentVolumes();
+    private metronomeVolume = DEFAULT_METRONOME_VOLUME;
+    private metronomeAccentVoice = DEFAULT_METRONOME_ACCENT_VOICE;
+    private metronomeBeatVoice = DEFAULT_METRONOME_BEAT_VOICE;
 
     constructor(private readonly kitRegistry: PlaybackKitRegistry = defaultPlaybackKitRegistry()) {}
 
@@ -30,6 +43,41 @@ export class DrumPlaybackManager {
 
     kits(): PlaybackKitDescriptor[] {
         return this.kitRegistry.descriptors();
+    }
+
+    setInstrumentVolumes(volumes: Record<string, number>): void {
+        this.instrumentVolumes = normalizeInstrumentVolumes(volumes);
+    }
+
+    setMetronomeSettings(volume: number, accentVoice: string, beatVoice: string): void {
+        this.metronomeVolume = normalizeMetronomeVolume(volume);
+        this.metronomeAccentVoice = normalizeMetronomeVoice(accentVoice, DEFAULT_METRONOME_ACCENT_VOICE);
+        this.metronomeBeatVoice = normalizeMetronomeVoice(beatVoice, DEFAULT_METRONOME_BEAT_VOICE);
+    }
+
+    async previewMetronomeVoice(voice: string): Promise<void> {
+        const context = await this.audioContext();
+        scheduleMetronomeVoice(this.audioHost(context, ""), context.currentTime + 0.02, voice, this.metronomeVolume);
+    }
+
+    async previewKit(kitId: string): Promise<void> {
+        const context = await this.audioContext();
+        await this.prepareKit(context, kitId);
+        const start = context.currentTime + 0.04;
+        const hits: readonly [instrument: string, offset: number, articulation?: DrumEvent["articulation"]][] = [
+            ["BD", 0], ["HH", 0.22], ["SD", 0.44, "accent"], ["HH", 0.66],
+            ["BD", 0.88], ["HT", 1.1], ["FT", 1.32], ["RC", 1.54],
+        ];
+        hits.forEach(([instrument, offset, articulation = "normal"]) => this.scheduleHit(context, {
+            instrument,
+            voice: instrument === "BD" ? "lower" : "upper",
+            measure: 0,
+            tick: 0,
+            durationTicks: 12,
+            symbol: instrument === "BD" || instrument === "SD" ? "o" : "x",
+            articulation,
+            source: { line: 1, column: 1 },
+        }, start + offset, kitId));
     }
 
     claim(controls: PlaybackControls): void {
@@ -69,7 +117,7 @@ export class DrumPlaybackManager {
     scheduleHit(context: AudioContext, event: DrumEvent, at: number, kitId: string): void {
         const kit = this.kitRegistry.get(kitId) ?? this.kitRegistry.get("synth");
         if (!kit) return;
-        const host = this.audioHost(context);
+        const host = this.audioHost(context, event.instrument);
         const velocity = event.articulation === "ghost" ? 0.38
             : event.articulation === "accent" || event.articulation === "accent-open" ? 1.15 : 0.82;
         const graceSpacing = 0.055;
@@ -88,16 +136,12 @@ export class DrumPlaybackManager {
     }
 
     scheduleClick(context: AudioContext, at: number, accent: boolean): void {
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        oscillator.type = "square";
-        oscillator.frequency.setValueAtTime(accent ? 1500 : 1050, at);
-        gain.gain.setValueAtTime(accent ? 0.16 : 0.1, at);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.035);
-        oscillator.connect(gain).connect(context.destination);
-        oscillator.start(at);
-        oscillator.stop(at + 0.04);
-        this.track(oscillator);
+        scheduleMetronomeVoice(
+            this.audioHost(context, ""),
+            at,
+            accent ? this.metronomeAccentVoice : this.metronomeBeatVoice,
+            this.metronomeVolume,
+        );
     }
 
     private track(source: PlaybackSource): void {
@@ -114,10 +158,11 @@ export class DrumPlaybackManager {
         return buffer;
     }
 
-    private audioHost(context: AudioContext): KitAudioHost {
+    private audioHost(context: AudioContext, instrument: string): KitAudioHost {
         return {
             context,
             destination: context.destination,
+            instrumentGain: instrumentVolumeGain(this.instrumentVolumes, instrument),
             noiseBuffer: () => this.noiseBuffer(context),
             track: source => this.track(source),
         };
@@ -138,6 +183,11 @@ export function createPlaybackControls(
     const availableKits = manager.kits();
     availableKits.forEach(kit => kitSelect.createEl("option", { text: kit.label, attr: { value: kit.id } }));
     kitSelect.value = availableKits[0]?.id ?? "synth";
+    const kitPreviewButton = controls.createEl("button", {
+        cls: "drum-kit-preview-button",
+        attr: { type: "button", "aria-label": "Preview selected playback kit", title: "Preview selected kit" },
+    });
+    setIcon(kitPreviewButton, "volume-2");
     const tempoLabel = controls.createEl("label", { cls: "drum-tempo-control" });
     tempoLabel.createSpan({ text: "BPM" });
     const tempoInput = tempoLabel.createEl("input", {
@@ -160,7 +210,10 @@ export function createPlaybackControls(
     const clearCursors = () => container.querySelectorAll(".drum-playback-cursor.is-active").forEach(cursor => cursor.classList.remove("is-active"));
 
     const stop = () => {
-        if (!playing) return;
+        if (!playing) {
+            manager.release(api);
+            return;
+        }
         playing = false;
         manager.stopAudio();
         manager.release(api);
@@ -216,6 +269,7 @@ export function createPlaybackControls(
         const tempo = Math.max(20, Math.min(300, Number.isFinite(rawTempo) ? rawTempo : documentModel.tempo));
         tempoInput.value = tempo.toString();
         playing = true;
+        manager.stopAudio();
         manager.claim(api);
         try {
             context = await manager.audioContext();
@@ -265,6 +319,23 @@ export function createPlaybackControls(
             stop();
             void play();
         }
+    });
+    kitPreviewButton.addEventListener("click", () => {
+        if (playing) stop();
+        manager.stopAudio();
+        manager.claim(api);
+        kitPreviewButton.disabled = true;
+        status.textContent = "Cargando kit…";
+        void manager.previewKit(kitSelect.value)
+            .then(() => {
+                if (!destroyed) status.textContent = "Audición del kit";
+            })
+            .catch(() => {
+                if (!destroyed) status.textContent = "Kit no disponible";
+            })
+            .finally(() => {
+                if (!destroyed) kitPreviewButton.disabled = false;
+            });
     });
     return api;
 }

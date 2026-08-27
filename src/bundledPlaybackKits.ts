@@ -108,6 +108,26 @@ const heavySamples: Record<string, SampleMapping> = {
     SP: { url: "splash", gain: 0.44 },
 };
 
+const crispySamples: Record<string, SampleMapping> = {
+    BD: { url: "kick-hard", gain: 1.02 },
+    SD: [
+        soft("snare-medium", { playbackRate: 1.04, gain: 0.82 }),
+        { url: "snare-hard", minVelocity: 0.5001, playbackRate: 1.06, gain: 1.08 },
+    ],
+    "SD:cross-stick": { url: "side-stick", playbackRate: 1.04, gain: 0.92 },
+    HH: { url: "hat-closed-medium", playbackRate: 1.04, gain: 0.58 },
+    "HH:open": { url: "hat-open-medium", playbackRate: 1.03, gain: 0.54 },
+    HF: { url: "hat-pedal", gain: 0.58 },
+    HT: { url: "tom-high-hard", playbackRate: 1.12, gain: 0.94 },
+    MT: { url: "tom-high-hard", playbackRate: 0.86, gain: 0.96 },
+    FT: { url: "tom-low-hard", playbackRate: 0.92, gain: 1.0 },
+    RC: { url: "ride-medium", playbackRate: 1.02, gain: 0.52 },
+    "RC:bell": { url: "ride-bell-hard", playbackRate: 1.02, gain: 0.58 },
+    CC: { url: "crash-medium", playbackRate: 1.03, gain: 0.42 },
+    CH: { url: "china-hard", playbackRate: 1.02, gain: 0.42 },
+    SP: { url: "splash", playbackRate: 1.04, gain: 0.4 },
+};
+
 async function loadBundledSample(id: string): Promise<ArrayBuffer> {
     const bytes = bundledSamples[id];
     if (!bytes) throw new Error(`Bundled sample "${id}" was not found.`);
@@ -115,8 +135,9 @@ async function loadBundledSample(id: string): Promise<ArrayBuffer> {
 }
 
 export const BUNDLED_SAMPLE_KIT_DEFINITIONS: readonly SampleKitDefinition[] = [
-    { id: "acoustic-studio", label: "Acústico · Studio", gain: 0.82, samples: studioSamples, loadSample: loadBundledSample },
-    { id: "acoustic-heavy", label: "Acústico · Heavy", gain: 0.88, samples: heavySamples, loadSample: loadBundledSample },
+    { id: "acoustic-studio", label: "Acoustic · Studio", gain: 0.82, samples: studioSamples, loadSample: loadBundledSample },
+    { id: "acoustic-heavy", label: "Acoustic · Heavy", gain: 0.88, samples: heavySamples, loadSample: loadBundledSample },
+    { id: "acoustic-crispy", label: "Acoustic · Crispy", gain: 0.86, samples: crispySamples, loadSample: loadBundledSample },
 ];
 
 export function bundledPlaybackKits(): PlaybackKit[] {

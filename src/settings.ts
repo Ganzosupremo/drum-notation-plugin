@@ -1,6 +1,13 @@
 import { App, PluginSettingTab, Setting, type SettingDefinitionItem } from "obsidian";
 import DrumNotationPlugin from "./main";
 import { defaultInstrumentPositions, normalizeInstrument } from "./notation/instruments";
+import { defaultInstrumentVolumes, PLAYBACK_INSTRUMENT_MIX } from "./playbackMix";
+import {
+    DEFAULT_METRONOME_ACCENT_VOICE,
+    DEFAULT_METRONOME_BEAT_VOICE,
+    DEFAULT_METRONOME_VOLUME,
+    METRONOME_VOICES,
+} from "./metronome";
 
 export interface DrumNotationSettings {
     beatsPerBar: number;
@@ -8,6 +15,10 @@ export interface DrumNotationSettings {
     showInstrumentLabels: boolean;
     showCount: boolean;
     instrumentPositions: Record<string, number>;
+    instrumentVolumes: Record<string, number>;
+    metronomeVolume: number;
+    metronomeAccentVoice: string;
+    metronomeBeatVoice: string;
 }
 
 export const DEFAULT_SETTINGS: DrumNotationSettings = {
@@ -16,6 +27,10 @@ export const DEFAULT_SETTINGS: DrumNotationSettings = {
     showInstrumentLabels: false,
     showCount: false,
     instrumentPositions: defaultInstrumentPositions(),
+    instrumentVolumes: defaultInstrumentVolumes(),
+    metronomeVolume: DEFAULT_METRONOME_VOLUME,
+    metronomeAccentVoice: DEFAULT_METRONOME_ACCENT_VOICE,
+    metronomeBeatVoice: DEFAULT_METRONOME_BEAT_VOICE,
 };
 
 interface SettingRowDefinition {
@@ -25,6 +40,8 @@ interface SettingRowDefinition {
 }
 
 export class DrumNotationSettingTab extends PluginSettingTab {
+    private readonly volumeSliderUpdates = new Map<string, (value: number) => void>();
+
     constructor(app: App, private readonly plugin: DrumNotationPlugin) {
         super(app, plugin);
     }
@@ -38,6 +55,11 @@ export class DrumNotationSettingTab extends PluginSettingTab {
     }
 
     display(): void {
+        this.renderSettings();
+    }
+
+    private renderSettings(): void {
+        this.volumeSliderUpdates.clear();
         this.containerEl.empty();
         this.settingRows().forEach(row => {
             const setting = new Setting(this.containerEl)
@@ -76,6 +98,70 @@ export class DrumNotationSettingTab extends PluginSettingTab {
                 },
             },
             {
+                name: "Playback instrument volumes",
+                desc: "Individual playback levels. These affect synthesized and acoustic kits (0%-150%).",
+                render: setting => {
+                    setting.addExtraButton(button => button
+                        .setIcon("reset")
+                        .setTooltip("Reset all playback volumes")
+                        .onClick(async () => {
+                            this.plugin.settings.instrumentVolumes = defaultInstrumentVolumes();
+                            Object.entries(this.plugin.settings.instrumentVolumes).forEach(([instrument, value]) => {
+                                this.volumeSliderUpdates.get(instrument)?.(value);
+                            });
+                            this.plugin.updatePlaybackMix();
+                            await this.plugin.saveSettings();
+                        }));
+                },
+            },
+            ...PLAYBACK_INSTRUMENT_MIX.map(({ instrument, label, defaultVolume }) => ({
+                name: label,
+                desc: `Playback volume for ${instrument}. Default: ${defaultVolume}%.`,
+                render: (setting: Setting) => {
+                    setting.addSlider(slider => {
+                        this.volumeSliderUpdates.set(instrument, value => {
+                            slider.setValue(value);
+                        });
+                        slider.setLimits(0, 150, 5)
+                            .setValue(this.plugin.settings.instrumentVolumes[instrument] ?? defaultVolume)
+                            .onChange(async value => {
+                                this.plugin.settings.instrumentVolumes[instrument] = value;
+                                this.plugin.updatePlaybackMix();
+                                await this.plugin.saveSettings();
+                            });
+                    });
+                },
+            })),
+            {
+                name: "Metronome volume",
+                desc: `Overall metronome level (0%-150%). Default: ${DEFAULT_METRONOME_VOLUME}%.`,
+                render: setting => {
+                    let updateSlider: ((value: number) => void) | undefined;
+                    setting.addSlider(slider => {
+                        updateSlider = value => {
+                            slider.setValue(value);
+                        };
+                        slider.setLimits(0, 150, 5)
+                            .setValue(this.plugin.settings.metronomeVolume)
+                            .onChange(async value => {
+                                this.plugin.settings.metronomeVolume = value;
+                                this.plugin.updateMetronomeSettings();
+                                await this.plugin.saveSettings();
+                            });
+                    }).addExtraButton(button => button
+                        .setIcon("reset")
+                        .setTooltip(`Reset to default (${DEFAULT_METRONOME_VOLUME}%)`)
+                        .onClick(async () => {
+                            this.plugin.settings.metronomeVolume = DEFAULT_METRONOME_VOLUME;
+                            updateSlider?.(DEFAULT_METRONOME_VOLUME);
+                            this.plugin.updateMetronomeSettings();
+                            await this.plugin.saveSettings();
+                        }));
+                },
+            },
+            this.metronomeVoiceRow("Metronome first beat", "Sound used for the accented first beat.", "metronomeAccentVoice"),
+            this.metronomeVoiceRow("Metronome regular beats", "Sound used for the remaining beats.", "metronomeBeatVoice"),
+            {
                 name: "Instrument staff positions",
                 desc: "Half-space steps from the middle line, for example ch=-7, sp=-6, sd=-1. Block directives take precedence.",
                 render: setting => this.renderInstrumentPositions(setting),
@@ -102,6 +188,33 @@ export class DrumNotationSettingTab extends PluginSettingTab {
                 render: setting => this.renderNotationScale(setting),
             },
         ];
+    }
+
+    private metronomeVoiceRow(
+        name: string,
+        desc: string,
+        key: "metronomeAccentVoice" | "metronomeBeatVoice",
+    ): SettingRowDefinition {
+        return {
+            name,
+            desc,
+            render: setting => {
+                setting.addDropdown(dropdown => {
+                    METRONOME_VOICES.forEach(voice => {
+                        dropdown.addOption(voice.id, voice.label);
+                    });
+                    dropdown.setValue(this.plugin.settings[key])
+                        .onChange(async value => {
+                            this.plugin.settings[key] = value;
+                            this.plugin.updateMetronomeSettings();
+                            await this.plugin.saveSettings();
+                        });
+                }).addExtraButton(button => button
+                    .setIcon("volume-2")
+                    .setTooltip("Preview this metronome voice")
+                    .onClick(async () => this.plugin.previewMetronomeVoice(this.plugin.settings[key])));
+            },
+        };
     }
 
     private instrumentPositionsText(): string {

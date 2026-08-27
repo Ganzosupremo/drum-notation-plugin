@@ -4,6 +4,13 @@ import { renderDrumDocument, RenderedDocument } from "./renderer/renderDocument"
 import { DEFAULT_SETTINGS, DrumNotationSettings, DrumNotationSettingTab } from "./settings";
 import { createPlaybackControls, DrumPlaybackManager, PlaybackControls } from "./playback";
 import { bundledPlaybackKits } from "./bundledPlaybackKits";
+import { normalizeInstrumentVolumes } from "./playbackMix";
+import {
+    DEFAULT_METRONOME_ACCENT_VOICE,
+    DEFAULT_METRONOME_BEAT_VOICE,
+    normalizeMetronomeVoice,
+    normalizeMetronomeVolume,
+} from "./metronome";
 
 class DrumRenderChild extends MarkdownRenderChild {
     constructor(
@@ -34,6 +41,12 @@ export default class DrumNotationPlugin extends Plugin {
             ...DEFAULT_SETTINGS.instrumentPositions,
             ...(saved?.instrumentPositions ?? {}),
         };
+        this.settings.instrumentVolumes = normalizeInstrumentVolumes(saved?.instrumentVolumes);
+        this.settings.metronomeVolume = normalizeMetronomeVolume(saved?.metronomeVolume);
+        this.settings.metronomeAccentVoice = normalizeMetronomeVoice(saved?.metronomeAccentVoice, DEFAULT_METRONOME_ACCENT_VOICE);
+        this.settings.metronomeBeatVoice = normalizeMetronomeVoice(saved?.metronomeBeatVoice, DEFAULT_METRONOME_BEAT_VOICE);
+        this.playbackManager.setInstrumentVolumes(this.settings.instrumentVolumes);
+        this.updateMetronomeSettings();
         this.addSettingTab(new DrumNotationSettingTab(this.app, this));
         bundledPlaybackKits().forEach(kit => this.playbackManager.registerKit(kit));
 
@@ -73,6 +86,22 @@ export default class DrumNotationPlugin extends Plugin {
 
     async saveSettings(): Promise<void> {
         await this.saveData(this.settings);
+    }
+
+    updatePlaybackMix(): void {
+        this.playbackManager.setInstrumentVolumes(this.settings.instrumentVolumes);
+    }
+
+    updateMetronomeSettings(): void {
+        this.playbackManager.setMetronomeSettings(
+            this.settings.metronomeVolume,
+            this.settings.metronomeAccentVoice,
+            this.settings.metronomeBeatVoice,
+        );
+    }
+
+    async previewMetronomeVoice(voice: string): Promise<void> {
+        await this.playbackManager.previewMetronomeVoice(voice);
     }
 
     refreshRenderers(): void {

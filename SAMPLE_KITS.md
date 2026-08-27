@@ -2,7 +2,7 @@
 
 Playback timing is independent from sound generation. `DrumPlaybackManager` owns the transport, metronome and active audio sources; `PlaybackKitRegistry` supplies the selectable kits.
 
-The release includes two offline sample presets: `Acústico · Studio` follows written dynamics with multiple velocity layers, while `Acústico · Heavy` favors the strongest kick, snare and tom recordings. Both share decoded buffers when the user switches kits.
+The release includes three offline sample presets: `Acústico · Studio` follows written dynamics with multiple velocity layers, `Acústico · Heavy` favors the strongest kick, snare and tom recordings, and `Acústico · Crispy` raises and tightens the hard snare while selecting a lighter cymbal mix. All three share decoded buffers when the user switches kits.
 
 Register a sample kit before Markdown processors render their controls:
 

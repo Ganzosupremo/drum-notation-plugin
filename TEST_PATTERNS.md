@@ -160,4 +160,10 @@ S: 2 4 (3a)
 K: 1 2& 3
 ```
 
-Expected: the Kit selector shows `Sintetizado`, `Acústico · Studio`, and `Acústico · Heavy`. Test all three. The acoustic kits must load before playback, use a real open hi-hat sample at `4&`, and remain audible after disconnecting the device from the network. Play starts an accented metronome click on beat 1, the cursor crosses the measure, BPM changes restart playback at the new speed, and stop silences scheduled audio. Disabling Metronome leaves the drum part audible. Starting another rendered block stops this one. Repeat in Reading View and Live Preview on desktop and mobile.
+Expected: the Kit selector shows `Sintetizado`, `Acústico · Studio`, `Acústico · Heavy`, and `Acústico · Crispy`. Use the speaker beside the selector to audition all four. The Crispy kit should have a bright, tight snare without overpowering the kick. The acoustic kits must load before playback, use a real open hi-hat sample at `4&`, and remain audible after disconnecting the device from the network. Play starts an accented metronome voice on beat 1, the cursor crosses the measure, BPM changes restart playback at the new speed, and stop silences scheduled audio. Disabling Metronome leaves the drum part audible. Starting another rendered block stops this one. Repeat in Reading View and Live Preview on desktop and mobile.
+
+In plugin settings, confirm that each instrument has a 0%-150% playback-volume slider. Defaults must show BD/SD at 100%, HH at 45%, and RC at 50%. Set HH to 0% and verify that it is silent while SD/BD remain audible; then use the section reset button and verify all defaults are restored. Repeat with both an acoustic kit and `Sintetizado`.
+
+Change `Metronome volume`, then audition several combinations with the speaker buttons beside `Metronome first beat` and `Metronome regular beats`. Include high/low bongo, cowbell and conga pairs, then set volume to 0% and restart Obsidian.
+
+Expected: previews and notation playback use the selected voices and level. The first pulse differs from regular pulses, 0% fully mutes the metronome without muting the drum kit, and all three values persist after restart. Resetting volume restores 65%; new installations default to high/low woodblock.
