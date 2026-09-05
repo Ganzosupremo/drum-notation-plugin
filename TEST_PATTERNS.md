@@ -167,3 +167,9 @@ In plugin settings, confirm that each instrument has a 0%-150% playback-volume s
 Change `Metronome volume`, then audition several combinations with the speaker buttons beside `Metronome first beat` and `Metronome regular beats`. Include high/low bongo, cowbell and conga pairs, then set volume to 0% and restart Obsidian.
 
 Expected: previews and notation playback use the selected voices and level. The first pulse differs from regular pulses, 0% fully mutes the metronome without muting the drum kit, and all three values persist after restart. Resetting volume restores 65%; new installations default to high/low woodblock.
+
+### Custom vault kit
+
+Add wav and flac one-shots to the vault. In plugin settings, map kick, snare, closed/open hi-hat, and ride using `Choose audio…`; preview each mapping with its speaker button. Use the import button on another row to select a file outside the vault, then select `Custom · Vault` in a rendered block and use the kit audition button.
+
+Expected: imported files appear under `Drum Notation Samples`, duplicate filenames receive a numeric suffix, settings persist after restart, and mapped instruments use the selected recordings. Unmapped instruments and deleted or unreadable files use synthesized fallback. Clearing one mapping affects only that sound; clearing all mappings leaves the custom kit fully synthesized. Confirm the files remain after a BRAT update on desktop and mobile.

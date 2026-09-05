@@ -97,6 +97,12 @@ Plugin settings include an independent 0%-150% playback volume for every instrum
 
 The metronome has its own 0%-150% volume control and independent selectors for the accented first beat and regular beats. Available synthesized percussion voices include high/low click, woodblock, cowbell, bongo and conga, plus clave, rimshot and shaker. A speaker button beside each selector previews the exact voice immediately; the default pair is high/low woodblock.
 
+### Custom samples
+
+The `Custom · Vault` kit lets users map their own one-shot audio to every drum, cymbal, and specialized sound such as open hi-hat, ride bell, rimshot, and cross-stick. Settings can select an existing audio file from the vault or import one from the device. Imported files are copied to the vault's `Drum Notation Samples` folder, outside the plugin directory, so BRAT updates do not remove them. Each mapping can be previewed, replaced, or cleared independently; missing mappings fall back to the synthesized kit.
+
+Supported formats are wav, mp3, ogg, flac, m4a, aac, and webm, up to 25 mb per file. Actual decoding support can vary slightly by operating system and Obsidian's embedded browser engine.
+
 Playback kits are registered independently from the transport. A kit may synthesize audio or load cached samples, provide velocity layers and playback-rate tuning, and override individual sounds with keys such as `SD:rimshot`, `SD:cross-stick`, `RC:bell`, and `HH:open`. Missing or unreadable samples fall back to the synthesized kit so partial kits remain usable. See `SAMPLE_KITS.md` for the integration contract and sample provenance.
 
 ## Development and release

@@ -173,7 +173,7 @@ export class SamplePlaybackKit implements PlaybackKit {
     private readonly gain: number;
     private readonly loadSample: SampleKitDefinition["loadSample"];
     private readonly mappings = new Map<string, SampleLayer[]>();
-    private readonly buffers: SampleBufferCache;
+    private buffers: SampleBufferCache;
 
     constructor(
         definition: SampleKitDefinition,
@@ -185,7 +185,13 @@ export class SamplePlaybackKit implements PlaybackKit {
         this.gain = definition.gain ?? 1;
         this.loadSample = url => definition.loadSample(url);
         this.buffers = buffers;
-        Object.entries(definition.samples).forEach(([key, mapping]) => this.mappings.set(key, normalizedLayers(mapping)));
+        this.setMappings(definition.samples);
+    }
+
+    updateSamples(samples: Record<string, SampleMapping>): void {
+        this.mappings.clear();
+        this.setMappings(samples);
+        this.buffers = new WeakMap();
     }
 
     async prepare(context: AudioContext): Promise<void> {
@@ -224,6 +230,10 @@ export class SamplePlaybackKit implements PlaybackKit {
             this.buffers.set(context, buffers);
         }
         return buffers;
+    }
+
+    private setMappings(samples: Record<string, SampleMapping>): void {
+        Object.entries(samples).forEach(([key, mapping]) => this.mappings.set(key, normalizedLayers(mapping)));
     }
 
     private load(context: AudioContext, url: string): Promise<AudioBuffer | undefined> {

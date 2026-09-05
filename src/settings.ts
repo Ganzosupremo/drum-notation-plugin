@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, type SettingDefinitionItem } from "obsidian";
+import { App, FuzzySuggestModal, Notice, PluginSettingTab, Setting, TFile, type SettingDefinitionItem } from "obsidian";
 import DrumNotationPlugin from "./main";
 import { defaultInstrumentPositions, normalizeInstrument } from "./notation/instruments";
 import { defaultInstrumentVolumes, PLAYBACK_INSTRUMENT_MIX } from "./playbackMix";
@@ -8,6 +8,7 @@ import {
     DEFAULT_METRONOME_VOLUME,
     METRONOME_VOICES,
 } from "./metronome";
+import { CUSTOM_SAMPLE_ACCEPT, CUSTOM_SAMPLE_TARGETS, isSupportedAudioFile } from "./customSamples";
 
 export interface DrumNotationSettings {
     beatsPerBar: number;
@@ -19,6 +20,7 @@ export interface DrumNotationSettings {
     metronomeVolume: number;
     metronomeAccentVoice: string;
     metronomeBeatVoice: string;
+    customSamples: Record<string, string>;
 }
 
 export const DEFAULT_SETTINGS: DrumNotationSettings = {
@@ -31,7 +33,27 @@ export const DEFAULT_SETTINGS: DrumNotationSettings = {
     metronomeVolume: DEFAULT_METRONOME_VOLUME,
     metronomeAccentVoice: DEFAULT_METRONOME_ACCENT_VOICE,
     metronomeBeatVoice: DEFAULT_METRONOME_BEAT_VOICE,
+    customSamples: {},
 };
+
+class AudioFileSuggestModal extends FuzzySuggestModal<TFile> {
+    constructor(app: App, private readonly choose: (file: TFile) => void) {
+        super(app);
+        this.setPlaceholder("Choose an audio file from this vault…");
+    }
+
+    getItems(): TFile[] {
+        return this.app.vault.getFiles().filter(isSupportedAudioFile);
+    }
+
+    getItemText(file: TFile): string {
+        return file.path;
+    }
+
+    onChooseItem(file: TFile): void {
+        this.choose(file);
+    }
+}
 
 interface SettingRowDefinition {
     name: string;
@@ -41,6 +63,7 @@ interface SettingRowDefinition {
 
 export class DrumNotationSettingTab extends PluginSettingTab {
     private readonly volumeSliderUpdates = new Map<string, (value: number) => void>();
+    private readonly customSampleButtonUpdates = new Map<string, (path: string | undefined) => void>();
 
     constructor(app: App, private readonly plugin: DrumNotationPlugin) {
         super(app, plugin);
@@ -60,6 +83,7 @@ export class DrumNotationSettingTab extends PluginSettingTab {
 
     private renderSettings(): void {
         this.volumeSliderUpdates.clear();
+        this.customSampleButtonUpdates.clear();
         this.containerEl.empty();
         this.settingRows().forEach(row => {
             const setting = new Setting(this.containerEl)
@@ -133,6 +157,26 @@ export class DrumNotationSettingTab extends PluginSettingTab {
                 },
             })),
             {
+                name: "Custom kit samples",
+                desc: "Map audio files stored inside this vault. Unmapped sounds use the synthesized fallback, and BRAT updates do not remove your files.",
+                render: setting => {
+                    setting.addExtraButton(button => button
+                        .setIcon("reset")
+                        .setTooltip("Clear all custom sample mappings")
+                        .onClick(async () => {
+                            this.plugin.settings.customSamples = {};
+                            CUSTOM_SAMPLE_TARGETS.forEach(target => this.customSampleButtonUpdates.get(target.key)?.(undefined));
+                            this.plugin.updateCustomKit();
+                            await this.plugin.saveSettings();
+                        }));
+                },
+            },
+            ...CUSTOM_SAMPLE_TARGETS.map(target => ({
+                name: target.label,
+                desc: `Custom kit mapping for ${target.key}.`,
+                render: (setting: Setting) => this.renderCustomSample(setting, target.key),
+            })),
+            {
                 name: "Metronome volume",
                 desc: `Overall metronome level (0%-150%). Default: ${DEFAULT_METRONOME_VOLUME}%.`,
                 render: setting => {
@@ -188,6 +232,74 @@ export class DrumNotationSettingTab extends PluginSettingTab {
                 render: setting => this.renderNotationScale(setting),
             },
         ];
+    }
+
+    private renderCustomSample(setting: Setting, key: string): void {
+        let selectedPath = this.plugin.settings.customSamples[key];
+        let updateButton: ((path: string | undefined) => void) | undefined;
+        setting
+            .addButton(button => {
+                updateButton = path => {
+                    selectedPath = path;
+                    button.setButtonText(path?.split("/").pop() ?? "Choose audio…");
+                    button.setTooltip(path ?? "Choose an audio file from this vault");
+                };
+                this.customSampleButtonUpdates.set(key, path => updateButton?.(path));
+                updateButton(selectedPath);
+                button.onClick(() => {
+                    const audioFiles = this.app.vault.getFiles().filter(isSupportedAudioFile);
+                    if (audioFiles.length === 0) {
+                        new Notice("Add a wav, mp3, ogg, flac, m4a, aac, or webm audio file to this vault first.");
+                        return;
+                    }
+                    new AudioFileSuggestModal(this.app, file => {
+                        this.plugin.settings.customSamples[key] = file.path;
+                        updateButton?.(file.path);
+                        this.plugin.updateCustomKit();
+                        void this.plugin.saveSettings();
+                    }).open();
+                });
+            })
+            .addExtraButton(button => button
+                .setIcon("file-up")
+                .setTooltip("Import an audio file into this vault")
+                .onClick(() => this.openAudioImport(key, path => updateButton?.(path))))
+            .addExtraButton(button => button
+                .setIcon("volume-2")
+                .setTooltip("Preview mapped sample")
+                .onClick(() => {
+                    if (selectedPath) void this.plugin.previewCustomSample(selectedPath);
+                }))
+            .addExtraButton(button => button
+                .setIcon("x")
+                .setTooltip("Clear this mapping")
+                .onClick(async () => {
+                    delete this.plugin.settings.customSamples[key];
+                    updateButton?.(undefined);
+                    this.plugin.updateCustomKit();
+                    await this.plugin.saveSettings();
+                }));
+    }
+
+    private openAudioImport(key: string, updateButton: (path: string) => void): void {
+        const input = this.containerEl.createEl("input");
+        input.type = "file";
+        input.accept = CUSTOM_SAMPLE_ACCEPT;
+        input.hidden = true;
+        input.addEventListener("change", () => {
+            const file = input.files?.[0];
+            input.remove();
+            if (!file) return;
+            void this.plugin.importCustomSample(file).then(path => {
+                if (!path) return;
+                this.plugin.settings.customSamples[key] = path;
+                updateButton(path);
+                this.plugin.updateCustomKit();
+                return this.plugin.saveSettings();
+            }).catch(() => new Notice("Unable to import this audio file."));
+        }, { once: true });
+        input.addEventListener("cancel", () => input.remove(), { once: true });
+        input.click();
     }
 
     private metronomeVoiceRow(

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0-beta.4
+
+- Adds a `Custom · Vault` playback kit with user-selected samples for every supported drum and specialized technique.
+- Adds an audio importer that copies one-shot files into the vault so BRAT updates never remove them.
+- Adds vault search, per-sample preview, replacement, individual clearing, and reset-all controls for custom mappings.
+- Supports wav, mp3, ogg, flac, m4a, aac, and webm files up to 25 mb, with synthesized fallback for every unmapped or unavailable sound.
+
 ## 1.1.0-beta.3
 
 - Adds persistent 0%-150% playback-volume controls for every instrument.

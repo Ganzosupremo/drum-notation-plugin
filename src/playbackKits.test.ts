@@ -54,4 +54,22 @@ describe("sample kit mapping", () => {
         kit.hit({} as KitAudioHost, event, 0, 0.8);
         assert.equal(fallbackHits, 1);
     });
+
+    test("replaces custom mappings and prepares their new files", async () => {
+        const loaded: string[] = [];
+        const kit = new SamplePlaybackKit({
+            id: "custom",
+            label: "Custom",
+            samples: {},
+            loadSample: path => {
+                loaded.push(path);
+                return Promise.resolve(new ArrayBuffer(1));
+            },
+        });
+        const context = { decodeAudioData: () => Promise.resolve({}) } as unknown as AudioContext;
+        await kit.prepare(context);
+        kit.updateSamples({ BD: "Samples/new-kick.wav", SD: "Samples/new-snare.wav" });
+        await kit.prepare(context);
+        assert.deepEqual(loaded.sort(), ["Samples/new-kick.wav", "Samples/new-snare.wav"]);
+    });
 });

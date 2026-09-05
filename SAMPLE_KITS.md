@@ -2,6 +2,8 @@
 
 Playback timing is independent from sound generation. `DrumPlaybackManager` owns the transport, metronome and active audio sources; `PlaybackKitRegistry` supplies the selectable kits.
 
+Users can also configure `Custom · Vault` without editing plugin files. Its one-shot mappings are stored as vault-relative paths in plugin settings, while imported audio is copied into `Drum Notation Samples` at the vault root. Unmapped, deleted, or undecodable files use the synthesized fallback. This separation keeps user audio intact across BRAT updates.
+
 The release includes three offline sample presets: `Acústico · Studio` follows written dynamics with multiple velocity layers, `Acústico · Heavy` favors the strongest kick, snare and tom recordings, and `Acústico · Crispy` raises and tightens the hard snare while selecting a lighter cymbal mix. All three share decoded buffers when the user switches kits.
 
 Register a sample kit before Markdown processors render their controls:
