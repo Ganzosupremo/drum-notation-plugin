@@ -22,7 +22,9 @@ import {
 import {
     AudioActivationError,
     createCompatibleAudioContext,
+    ensureAudioContextProgress,
     primeAudioContext,
+    requestPlaybackAudioSession,
     resumeAudioContext,
     runtimeAudioContextState,
     shouldReplaceAudioContext,
@@ -116,6 +118,7 @@ export class DrumPlaybackManager {
     }
 
     async audioContext(targetWindow: Window = window): Promise<AudioContext> {
+        requestPlaybackAudioSession(targetWindow);
         const currentState = this.context ? runtimeAudioContextState(this.context) : undefined;
         if (!this.context || (currentState && shouldReplaceAudioContext(currentState, this.refreshContextOnNextActivation))) {
             const previous = this.context;
@@ -129,7 +132,8 @@ export class DrumPlaybackManager {
         const context = this.context;
         primeAudioContext(context);
         try {
-            await resumeAudioContext(context);
+            await resumeAudioContext(context, targetWindow);
+            await ensureAudioContextProgress(context, targetWindow);
         } catch {
             this.refreshContextOnNextActivation = true;
             throw new AudioActivationError();
@@ -330,6 +334,7 @@ export function createPlaybackControls(
         manager.stopAudio();
         manager.claim(api);
         try {
+            status.textContent = "Iniciando audio…";
             context = await manager.audioContext(container.ownerDocument.defaultView ?? window);
             status.textContent = "Cargando kit…";
             await manager.prepareKit(context, kitSelect.value);

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { shouldReplaceAudioContext, shouldResumeAudioContext } from "./audioActivation";
+import { hasAudioClockAdvanced, shouldReplaceAudioContext, shouldResumeAudioContext } from "./audioActivation";
 
 test("replaces contexts interrupted by iPadOS or invalidated after backgrounding", () => {
     assert.equal(shouldReplaceAudioContext("interrupted", false), true);
@@ -14,4 +14,10 @@ test("resumes every context state except running", () => {
     assert.equal(shouldResumeAudioContext("interrupted"), true);
     assert.equal(shouldResumeAudioContext("closed"), true);
     assert.equal(shouldResumeAudioContext("running"), false);
+});
+
+test("detects WebKit contexts whose running clock is actually frozen", () => {
+    assert.equal(hasAudioClockAdvanced(10, 10), false);
+    assert.equal(hasAudioClockAdvanced(10, 10.0005), false);
+    assert.equal(hasAudioClockAdvanced(10, 10.08), true);
 });

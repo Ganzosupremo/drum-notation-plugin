@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0-beta.6
+
+- Detects iPad Web Audio contexts that report `running` while their rendering clock remains frozen.
+- Recovers a frozen WebKit audio engine with a guarded suspend/resume cycle before scheduling notes.
+- Requests the `playback` audio-session category when supported so iPadOS routes the plugin as intentional media playback.
+
 ## 1.1.0-beta.5
 
 - Fixes silent playback on iPad by unlocking Web Audio directly from the Play gesture.
