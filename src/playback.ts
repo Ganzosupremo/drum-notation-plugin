@@ -1,4 +1,3 @@
-import { setIcon } from "obsidian";
 import { DrumDocument, DrumEvent } from "./types";
 import { buildPlaybackSchedule } from "./playbackSchedule";
 import { createSVGElement } from "./renderer/svgHelper";
@@ -33,6 +32,42 @@ import {
 export interface PlaybackControls {
     destroy(): void;
     stop(): void;
+}
+
+type PlaybackIcon = "play" | "square" | "volume-2";
+
+function setPlaybackIcon(button: HTMLButtonElement, icon: PlaybackIcon): void {
+    const svg = createSVGElement(button.ownerDocument, "svg");
+    svg.classList.add("drum-control-icon");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+
+    if (icon === "play") {
+        const path = createSVGElement(button.ownerDocument, "path");
+        path.setAttribute("d", "m6 3 12 9-12 9z");
+        svg.appendChild(path);
+    } else if (icon === "square") {
+        const rect = createSVGElement(button.ownerDocument, "rect");
+        rect.setAttribute("x", "5");
+        rect.setAttribute("y", "5");
+        rect.setAttribute("width", "14");
+        rect.setAttribute("height", "14");
+        rect.setAttribute("rx", "1");
+        svg.appendChild(rect);
+    } else {
+        [
+            "M11 5 6 9H2v6h4l5 4V5z",
+            "M15.54 8.46a5 5 0 0 1 0 7.07",
+            "M19.07 4.93a10 10 0 0 1 0 14.14",
+        ].forEach(data => {
+            const path = createSVGElement(button.ownerDocument, "path");
+            path.setAttribute("d", data);
+            svg.appendChild(path);
+        });
+    }
+
+    button.replaceChildren(svg);
 }
 
 export class DrumPlaybackManager {
@@ -237,7 +272,7 @@ export function createPlaybackControls(
 ): PlaybackControls {
     const controls = container.createDiv({ cls: "drum-playback-controls" });
     const playButton = controls.createEl("button", { cls: "drum-playback-button", attr: { type: "button", "aria-label": "Play drum notation" } });
-    setIcon(playButton, "play");
+    setPlaybackIcon(playButton, "play");
     const kitLabel = controls.createEl("label", { cls: "drum-kit-control" });
     kitLabel.createSpan({ text: "Kit" });
     const kitSelect = kitLabel.createEl("select", { attr: { "aria-label": "Playback kit" } });
@@ -248,7 +283,7 @@ export function createPlaybackControls(
         cls: "drum-kit-preview-button",
         attr: { type: "button", "aria-label": "Preview selected playback kit", title: "Preview selected kit" },
     });
-    setIcon(kitPreviewButton, "volume-2");
+    setPlaybackIcon(kitPreviewButton, "volume-2");
     const tempoLabel = controls.createEl("label", { cls: "drum-tempo-control" });
     tempoLabel.createSpan({ text: "BPM" });
     const tempoInput = tempoLabel.createEl("input", {
@@ -284,7 +319,7 @@ export function createPlaybackControls(
         animationFrame = 0;
         finishTimer = 0;
         clearCursors();
-        setIcon(playButton, "play");
+        setPlaybackIcon(playButton, "play");
         playButton.setAttribute("aria-label", "Play drum notation");
         status.textContent = "Listo";
     };
@@ -354,7 +389,7 @@ export function createPlaybackControls(
             if (item.kind === "hit") manager.scheduleHit(context!, item.event, at, kitSelect.value);
             else manager.scheduleClick(context!, at, item.accent);
         });
-        setIcon(playButton, "square");
+        setPlaybackIcon(playButton, "square");
         playButton.setAttribute("aria-label", "Stop playback");
         updateCursor();
         const totalPulses = documentModel.measures.reduce((sum, measure) => sum + measure.beats, 0);

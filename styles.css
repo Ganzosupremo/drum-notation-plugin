@@ -33,6 +33,7 @@
     width: 34px;
     height: 30px;
     padding: 0;
+    color: var(--text-normal);
 }
 
 .drum-playback-button svg {
@@ -47,11 +48,26 @@
     width: 30px;
     height: 30px;
     padding: 0;
+    color: var(--text-normal);
 }
 
 .drum-kit-preview-button svg {
     width: 15px;
     height: 15px;
+}
+
+.drum-control-icon {
+    display: block !important;
+    flex: none;
+    overflow: visible;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: none;
 }
 
 .drum-kit-control,

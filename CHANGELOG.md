@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0-beta.7
+
+- Replaces Obsidian-provided playback button icons with self-contained SVG icons that render reliably on iPad.
+- Gives play, stop, and kit-preview icons explicit stroke, visibility, and contrast styles across mobile themes.
+
 ## 1.1.0-beta.6
 
 - Detects iPad Web Audio contexts that report `running` while their rendering clock remains frozen.
