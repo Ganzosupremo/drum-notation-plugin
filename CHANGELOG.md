@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0
+
+- Adds responsive score playback with selectable drum kits, BPM controls, a moving cursor, swing-aware scheduling, and an optional metronome.
+- Adds embedded acoustic kits, the `Custom · Vault` kit for user-mapped samples, independent per-instrument mix controls, and configurable metronome voices.
+- Finalizes iPhone and iPad support: reliable Web Audio activation and recovery plus self-contained playback button icons that render across mobile themes.
+
 ## 1.1.0-beta.7
 
 - Replaces Obsidian-provided playback button icons with self-contained SVG icons that render reliably on iPad.
