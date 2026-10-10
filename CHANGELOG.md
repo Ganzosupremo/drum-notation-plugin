@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0-beta.5
+
+- Fixes silent playback on iPad by unlocking Web Audio directly from the Play gesture.
+- Recreates WebKit audio contexts after Obsidian returns from the background, including the iPad-specific `interrupted` state.
+- Adds a retry hint when iPadOS blocks the first audio activation instead of reporting a missing kit.
+
 ## 1.1.0-beta.4
 
 - Adds a `Custom · Vault` playback kit with user-selected samples for every supported drum and specialized technique.

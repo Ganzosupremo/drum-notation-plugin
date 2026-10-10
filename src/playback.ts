@@ -19,6 +19,14 @@ import {
     PlaybackKitRegistry,
     PlaybackSource,
 } from "./playbackKits";
+import {
+    AudioActivationError,
+    createCompatibleAudioContext,
+    primeAudioContext,
+    resumeAudioContext,
+    runtimeAudioContextState,
+    shouldReplaceAudioContext,
+} from "./audioActivation";
 
 export interface PlaybackControls {
     destroy(): void;
@@ -30,6 +38,8 @@ export class DrumPlaybackManager {
     private noise?: AudioBuffer;
     private active?: PlaybackControls;
     private readonly sources = new Set<PlaybackSource>();
+    private readonly observedDocuments = new Map<Document, { count: number; markForRefresh: () => void }>();
+    private refreshContextOnNextActivation = false;
     private instrumentVolumes = defaultInstrumentVolumes();
     private metronomeVolume = DEFAULT_METRONOME_VOLUME;
     private metronomeAccentVoice = DEFAULT_METRONOME_ACCENT_VOICE;
@@ -55,13 +65,13 @@ export class DrumPlaybackManager {
         this.metronomeBeatVoice = normalizeMetronomeVoice(beatVoice, DEFAULT_METRONOME_BEAT_VOICE);
     }
 
-    async previewMetronomeVoice(voice: string): Promise<void> {
-        const context = await this.audioContext();
+    async previewMetronomeVoice(voice: string, targetWindow: Window = window): Promise<void> {
+        const context = await this.audioContext(targetWindow);
         scheduleMetronomeVoice(this.audioHost(context, ""), context.currentTime + 0.02, voice, this.metronomeVolume);
     }
 
-    async previewKit(kitId: string): Promise<void> {
-        const context = await this.audioContext();
+    async previewKit(kitId: string, targetWindow: Window = window): Promise<void> {
+        const context = await this.audioContext(targetWindow);
         await this.prepareKit(context, kitId);
         const start = context.currentTime + 0.04;
         const hits: readonly [instrument: string, offset: number, articulation?: DrumEvent["articulation"]][] = [
@@ -89,10 +99,42 @@ export class DrumPlaybackManager {
         if (this.active === controls) this.active = undefined;
     }
 
-    async audioContext(): Promise<AudioContext> {
-        this.context ??= new AudioContext();
-        if (this.context.state === "suspended") await this.context.resume();
-        return this.context;
+    observeDocument(targetDocument: Document): () => void {
+        const existing = this.observedDocuments.get(targetDocument);
+        if (existing) {
+            existing.count++;
+            return () => this.releaseDocument(targetDocument);
+        }
+        const markForRefresh = () => {
+            this.refreshContextOnNextActivation = true;
+            this.active?.stop();
+        };
+        targetDocument.addEventListener("visibilitychange", markForRefresh);
+        targetDocument.defaultView?.addEventListener("pagehide", markForRefresh);
+        this.observedDocuments.set(targetDocument, { count: 1, markForRefresh });
+        return () => this.releaseDocument(targetDocument);
+    }
+
+    async audioContext(targetWindow: Window = window): Promise<AudioContext> {
+        const currentState = this.context ? runtimeAudioContextState(this.context) : undefined;
+        if (!this.context || (currentState && shouldReplaceAudioContext(currentState, this.refreshContextOnNextActivation))) {
+            const previous = this.context;
+            this.stopAudio();
+            this.context = createCompatibleAudioContext(targetWindow);
+            this.noise = undefined;
+            this.refreshContextOnNextActivation = false;
+            if (previous) void previous.close().catch(() => undefined);
+        }
+
+        const context = this.context;
+        primeAudioContext(context);
+        try {
+            await resumeAudioContext(context);
+        } catch {
+            this.refreshContextOnNextActivation = true;
+            throw new AudioActivationError();
+        }
+        return context;
     }
 
     stopAudio(): void {
@@ -108,6 +150,11 @@ export class DrumPlaybackManager {
         if (this.context) void this.context.close();
         this.context = undefined;
         this.noise = undefined;
+        this.observedDocuments.forEach((entry, targetDocument) => {
+            targetDocument.removeEventListener("visibilitychange", entry.markForRefresh);
+            targetDocument.defaultView?.removeEventListener("pagehide", entry.markForRefresh);
+        });
+        this.observedDocuments.clear();
     }
 
     async prepareKit(context: AudioContext, kitId: string): Promise<void> {
@@ -147,6 +194,16 @@ export class DrumPlaybackManager {
     private track(source: PlaybackSource): void {
         this.sources.add(source);
         source.addEventListener("ended", () => this.sources.delete(source), { once: true });
+    }
+
+    private releaseDocument(targetDocument: Document): void {
+        const entry = this.observedDocuments.get(targetDocument);
+        if (!entry) return;
+        entry.count--;
+        if (entry.count > 0) return;
+        targetDocument.removeEventListener("visibilitychange", entry.markForRefresh);
+        targetDocument.defaultView?.removeEventListener("pagehide", entry.markForRefresh);
+        this.observedDocuments.delete(targetDocument);
     }
 
     private noiseBuffer(context: AudioContext): AudioBuffer {
@@ -206,6 +263,7 @@ export function createPlaybackControls(
     let startTime = 0;
     let secondsPerPulse = 0;
     let context: AudioContext | undefined;
+    const releaseAudioObserver = manager.observeDocument(container.ownerDocument);
 
     const clearCursors = () => container.querySelectorAll(".drum-playback-cursor.is-active").forEach(cursor => cursor.classList.remove("is-active"));
 
@@ -272,12 +330,14 @@ export function createPlaybackControls(
         manager.stopAudio();
         manager.claim(api);
         try {
-            context = await manager.audioContext();
+            context = await manager.audioContext(container.ownerDocument.defaultView ?? window);
             status.textContent = "Cargando kit…";
             await manager.prepareKit(context, kitSelect.value);
-        } catch {
+        } catch (error) {
             playing = false;
-            status.textContent = "Kit no disponible";
+            status.textContent = error instanceof AudioActivationError
+                ? "Audio bloqueado · toca Play otra vez"
+                : "Kit no disponible";
             manager.release(api);
             return;
         }
@@ -302,6 +362,7 @@ export function createPlaybackControls(
         destroy() {
             destroyed = true;
             stop();
+            releaseAudioObserver();
             controls.remove();
         },
     };
@@ -326,12 +387,14 @@ export function createPlaybackControls(
         manager.claim(api);
         kitPreviewButton.disabled = true;
         status.textContent = "Cargando kit…";
-        void manager.previewKit(kitSelect.value)
+        void manager.previewKit(kitSelect.value, container.ownerDocument.defaultView ?? window)
             .then(() => {
                 if (!destroyed) status.textContent = "Audición del kit";
             })
-            .catch(() => {
-                if (!destroyed) status.textContent = "Kit no disponible";
+            .catch(error => {
+                if (!destroyed) status.textContent = error instanceof AudioActivationError
+                    ? "Audio bloqueado · toca otra vez"
+                    : "Kit no disponible";
             })
             .finally(() => {
                 if (!destroyed) kitPreviewButton.disabled = false;
