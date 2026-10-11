@@ -31,3 +31,6 @@ coverage/
 # Local Obsidian/plugin state
 data.json
 attached_assets/
+
+# Local transcription engines, audio probes, and generated analysis results
+.transcription/

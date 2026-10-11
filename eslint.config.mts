@@ -37,6 +37,7 @@ export default defineConfig(
 	},
 	globalIgnores([
 		"node_modules",
+		".transcription",
 		"dist",
 		".visual-test",
 		"playwright-report",
