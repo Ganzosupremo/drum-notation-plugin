@@ -27,6 +27,20 @@ def to_wav(source, target):
     run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(source), "-ac", "2", "-ar", "44100", str(target)])
 
 
+def host_mount_point(path):
+    """Returns the bind mount that holds `path`, or None when it lives only inside the container."""
+    mount_points = []
+    with open("/proc/self/mountinfo") as mountinfo:
+        for line in mountinfo:
+            mount_points.append(line.split()[4].replace("\\040", " "))
+    resolved = path.resolve()
+    candidates = [Path(point) for point in mount_points if point != "/"]
+    holding = [point for point in candidates if point == resolved or point in resolved.parents]
+    # Kernel/runtime mounts are never where the user expects their files.
+    holding = [point for point in holding if not str(point).startswith(("/proc", "/sys", "/dev", "/etc", "/tmp"))]
+    return max(holding, key=lambda point: len(point.parts), default=None)
+
+
 def separate_drums(audio, work_dir):
     run([
         sys.executable, "-m", "demucs",
@@ -79,6 +93,12 @@ def main():
 
     if not args.audio.is_file():
         parser.error(f"audio file not found: {args.audio}")
+    if not host_mount_point(args.output_dir):
+        parser.error(
+            f"{args.output_dir} is not a folder shared with the host, so the MIDI would be deleted with "
+            "the container. Mount one, e.g. docker run --rm -v \"C:\\Musica:/out\" ..., or use "
+            "transcribe-drums.ps1 / docker compose, which do it for you."
+        )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     name = args.audio.stem
 
