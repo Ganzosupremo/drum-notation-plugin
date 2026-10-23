@@ -265,6 +265,10 @@ export class DrumPlaybackManager {
     }
 }
 
+/** Background tabs throttle timers to about one second, so the window must outlast that. */
+const SCHEDULE_LOOKAHEAD_SECONDS = 1.5;
+const SCHEDULE_INTERVAL_MS = 250;
+
 export function createPlaybackControls(
     documentModel: DrumDocument,
     container: HTMLElement,
@@ -299,6 +303,7 @@ export function createPlaybackControls(
     let destroyed = false;
     let animationFrame = 0;
     let finishTimer = 0;
+    let scheduleTimer = 0;
     let startTime = 0;
     let secondsPerPulse = 0;
     let context: AudioContext | undefined;
@@ -316,8 +321,10 @@ export function createPlaybackControls(
         manager.release(api);
         if (animationFrame !== 0) container.ownerDocument.defaultView?.cancelAnimationFrame(animationFrame);
         if (finishTimer !== 0) container.ownerDocument.defaultView?.clearTimeout(finishTimer);
+        if (scheduleTimer !== 0) container.ownerDocument.defaultView?.clearInterval(scheduleTimer);
         animationFrame = 0;
         finishTimer = 0;
+        scheduleTimer = 0;
         clearCursors();
         setPlaybackIcon(playButton, "play");
         playButton.setAttribute("aria-label", "Play drum notation");
@@ -384,11 +391,25 @@ export function createPlaybackControls(
         if (!playing || destroyed) return;
         secondsPerPulse = 60 / tempo;
         startTime = context.currentTime + 0.06;
-        buildPlaybackSchedule(documentModel, tempo, metronomeInput.checked).forEach(item => {
-            const at = startTime + item.timeSeconds;
-            if (item.kind === "hit") manager.scheduleHit(context!, item.event, at, kitSelect.value);
-            else manager.scheduleClick(context!, at, item.accent);
-        });
+        // Long scores (e.g. imported songs) would create thousands of audio nodes at once and stall the
+        // audio thread, so only the next few seconds are scheduled and the window is refilled on a timer.
+        const schedule = buildPlaybackSchedule(documentModel, tempo, metronomeInput.checked);
+        const kitId = kitSelect.value;
+        let nextItem = 0;
+        const scheduleAhead = () => {
+            if (!playing || !context) return;
+            const horizon = context.currentTime + SCHEDULE_LOOKAHEAD_SECONDS;
+            while (nextItem < schedule.length) {
+                const item = schedule[nextItem]!;
+                const at = startTime + item.timeSeconds;
+                if (at > horizon) break;
+                if (item.kind === "hit") manager.scheduleHit(context, item.event, at, kitId);
+                else manager.scheduleClick(context, at, item.accent);
+                nextItem++;
+            }
+        };
+        scheduleAhead();
+        scheduleTimer = container.ownerDocument.defaultView?.setInterval(scheduleAhead, SCHEDULE_INTERVAL_MS) ?? 0;
         setPlaybackIcon(playButton, "square");
         playButton.setAttribute("aria-label", "Stop playback");
         updateCursor();
