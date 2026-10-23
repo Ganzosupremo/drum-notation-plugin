@@ -1,0 +1,37 @@
+name: Update visual snapshots
+
+# Regenerates the Linux Playwright baselines on the same runner image CI uses
+# and commits them to the branch the workflow runs on. Run it manually from
+# the Actions tab after an intended rendering change.
+on:
+    workflow_dispatch:
+
+permissions:
+    contents: write
+
+jobs:
+    update:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js 22
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22.x
+                  cache: "npm"
+            - run: npm ci
+            - run: npx playwright install --with-deps chromium
+            - run: npm run build
+            - run: npx playwright test --update-snapshots
+            - name: Commit updated baselines
+              run: |
+                  git add tests/visual/snapshots/linux
+                  if git diff --cached --quiet; then
+                      echo "Snapshots already up to date."
+                      exit 0
+                  fi
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898341+github-actions[bot]@users.noreply.github.com"
+                  git commit -m "test(visual): update Linux snapshot baselines"
+                  git push
