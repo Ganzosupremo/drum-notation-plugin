@@ -105,6 +105,14 @@ Supported formats are wav, mp3, ogg, flac, m4a, aac, and webm, up to 25 mb per f
 
 Playback kits are registered independently from the transport. A kit may synthesize audio or load cached samples, provide velocity layers and playback-rate tuning, and override individual sounds with keys such as `SD:rimshot`, `SD:cross-stick`, `RC:bell`, and `HH:open`. Missing or unreadable samples fall back to the synthesized kit so partial kits remain usable. See `SAMPLE_KITS.md` for the integration contract and sample provenance.
 
+## Import from MIDI
+
+Run **Insert drum notation from a .mid file** from the command palette while editing a note. Pick a `.mid`/`.midi` file from the vault, confirm the tempo, the time of the first downbeat in seconds, beats per bar and grid (eighth or sixteenth notes), and a `drums` grid block is inserted at the cursor.
+
+Notes are read with the General MIDI drum map (kick 35/36, snare 37/38/40, hi-hat 42/44/46, toms 41/43/45/47/48/50, crash 49/57, ride 51/53/59, china 52, splash 55). Channel 10 is used when the file has it; otherwise every channel is treated as drums. Hits before the first downbeat and unsupported notes are skipped and reported in a notice.
+
+This is the bridge for audio transcription: tools such as ADTOF or Omnizart (optionally after separating the drum stem with Demucs) can turn a recording into a drum MIDI file that this command then notates.
+
 ## Development and release
 
 ```bash

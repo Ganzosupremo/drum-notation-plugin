@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Adds an **Insert drum notation from a .mid file** command that converts General MIDI drum tracks into a grid block, using a user-confirmed tempo and first downbeat.
+
 ## 1.1.0
 
 - Adds responsive score playback with selectable drum kits, BPM controls, a moving cursor, swing-aware scheduling, and an optional metronome.

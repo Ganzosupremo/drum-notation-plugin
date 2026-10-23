@@ -19,6 +19,7 @@ import {
     safeSampleFileName,
 } from "./customSamples";
 import { SamplePlaybackKit, SynthPlaybackKit } from "./playbackKits";
+import { startMidiImport } from "./transcription/midiImport";
 
 class DrumRenderChild extends MarkdownRenderChild {
     constructor(
@@ -71,6 +72,12 @@ export default class DrumNotationPlugin extends Plugin {
             },
         }, new SynthPlaybackKit());
         this.playbackManager.registerKit(this.customKit);
+
+        this.addCommand({
+            id: "insert-from-midi",
+            name: "Insert drum notation from a .mid file",
+            editorCallback: editor => startMidiImport(this.app, editor, this.settings.beatsPerBar),
+        });
 
         this.registerMarkdownCodeBlockProcessor("drums", (source, el, ctx) => {
             try {
