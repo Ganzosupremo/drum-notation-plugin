@@ -1,0 +1,9 @@
+# docker compose run --rm transcribe /in/cancion.mp3 [--bpm 66] [--keep-stem]
+# Put the song in ./audio; the .drums.mid is written next to it in the same folder.
+services:
+  transcribe:
+    build: .
+    image: drum-transcription
+    volumes:
+      - ./audio:/in
+      - ./audio:/out

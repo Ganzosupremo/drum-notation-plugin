@@ -73,7 +73,24 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 Para canciones largas suele ir mejor recortar antes un fragmento (por ejemplo
 con `ffmpeg -ss 120 -t 20 -i cancion.mp3 fragmento.wav`) y transcribir solo eso.
 
+## Uso con Docker Compose
+
+Si prefieres no usar los scripts, copia la canción a la carpeta `audio/` de esta
+herramienta y ejecuta:
+
+```powershell
+cd "C:\Vibe Coding\drum-notation-plugin\tools\drum-transcription"
+docker compose run --rm transcribe /in/cancion.mp3 --bpm 66
+```
+
+El `.mid` aparece en esa misma carpeta `audio/` (que git ignora).
+
 ## Uso directo con Docker
+
+El contenedor se borra al terminar (`--rm`), así que **la carpeta de salida
+tiene que ser un volumen del host** (`-v ...:/out`). Si no lo es, el script se
+detiene al principio con un error en lugar de transcribir y perder el
+resultado. Los scripts y `compose.yaml` ya montan los volúmenes por ti.
 
 ```powershell
 docker build -t drum-transcription .
