@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0-beta.1
 
 - Adds an **Insert drum notation from a .mid file** command that converts General MIDI drum tracks into a grid block, using a user-confirmed tempo and first downbeat.
 
