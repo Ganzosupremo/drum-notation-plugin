@@ -1,11 +1,10 @@
 name: Update visual snapshots
 
 # Regenerates the Linux Playwright baselines on the same runner image CI uses
-# and commits them to the branch the workflow runs on.
+# and commits them to the branch the workflow runs on. Run it manually from
+# the Actions tab after an intended rendering change.
 on:
     workflow_dispatch:
-    push:
-        branches: ["claude/visual-snapshots-linux"]
 
 permissions:
     contents: write
