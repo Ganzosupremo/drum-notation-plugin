@@ -113,6 +113,8 @@ Notes are read with the General MIDI drum map (kick 35/36, snare 37/38/40, hi-ha
 
 This is the bridge for audio transcription: tools such as ADTOF or Omnizart (optionally after separating the drum stem with Demucs) can turn a recording into a drum MIDI file that this command then notates.
 
+[`tools/drum-transcription`](tools/drum-transcription/README.md) packages that pipeline in Docker: one command turns a song into a `.drums.mid` file (Demucs separation, then Omnizart transcription of kick, snare and hi-hat).
+
 ## Development and release
 
 ```bash
