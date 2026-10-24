@@ -12,6 +12,11 @@ RUN pip install --no-cache-dir torch==2.5.1 torchaudio==2.5.1 --index-url https:
 ENV TORCH_HOME=/opt/torch
 RUN python -c "from demucs.pretrained import get_model; get_model('htdemucs')"
 
+# madmom 0.16 picks the best bar length with an array NumPy 2 rejects; compare the scores directly.
+RUN sed -i 's/best = np.argmax(np.asarray(results)\[:, 1\])/best = int(np.argmax([result[1] for result in results]))/' \
+        /usr/local/lib/python3.11/dist-packages/madmom/features/downbeats.py \
+ && grep -q "result\[1\] for result in results" /usr/local/lib/python3.11/dist-packages/madmom/features/downbeats.py
+
 COPY transcribe.py /opt/drum-transcription/transcribe.py
 WORKDIR /work
 ENTRYPOINT ["python", "/opt/drum-transcription/transcribe.py"]

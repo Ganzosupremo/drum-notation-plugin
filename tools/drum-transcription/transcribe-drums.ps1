@@ -14,6 +14,7 @@ param(
     [double]$Bpm,
     [switch]$NoSeparate,
     [switch]$KeepStem,
+    [switch]$NoWarp,
     [switch]$Rebuild
 )
 
@@ -35,6 +36,7 @@ $containerArgs = @("/in/$($audioFile.Name)", "--output-dir", "/out")
 if ($Bpm) { $containerArgs += @("--bpm", "$Bpm") }
 if ($NoSeparate) { $containerArgs += "--no-separate" }
 if ($KeepStem) { $containerArgs += "--keep-stem" }
+if ($NoWarp) { $containerArgs += "--no-warp" }
 
 docker run --rm `
     -v "$($audioFile.DirectoryName):/in:ro" `

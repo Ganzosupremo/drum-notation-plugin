@@ -27,6 +27,21 @@ describe("transcribedEventsToDrumSource", () => {
         assert.match(result.source, /HH \| x . . . {2}. . . . {2}. . . . {2}. . . . \| o/);
     });
 
+    test("quantizes with a fractional tempo but writes a whole-number tempo directive", () => {
+        const beat = 60 / 66.4;
+        const events: TranscribedDrumEvent[] = [
+            { timeSeconds: 0, instrument: "kick" },
+            { timeSeconds: 40 * beat, instrument: "snare" },
+        ];
+
+        const result = transcribedEventsToDrumSource(events, { tempoBpm: 66.4 });
+
+        assert.match(result.source, /^tempo: 66$/m);
+        assert.equal(parseDrumDocument(result.source).diagnostics.filter(diagnostic => diagnostic.severity === "error").length, 0);
+        const snareBars = result.source.split("\n").find(line => line.startsWith("SD"))!.split("|").slice(1, -1);
+        assert.equal(snareBars[10]!.trim().split(/\s+/)[0], "o");
+    });
+
     test("uses confidence to resolve duplicate events and preserves events before the downbeat for review", () => {
         const result = transcribedEventsToDrumSource([
             { timeSeconds: 0.1, instrument: "kick", confidence: 0.9 },

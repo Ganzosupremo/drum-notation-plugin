@@ -53,8 +53,8 @@ class MidiImportOptionsModal extends Modal {
     ) {
         super(app);
         this.tempo = String(midi.initialTempoBpm);
-        this.firstDownbeat = String(Math.round((midi.firstHitSeconds ?? 0) * 1000) / 1000);
-        this.beatsPerBar = String(defaultBeatsPerBar);
+        this.firstDownbeat = String(Math.round((midi.downbeatSeconds ?? midi.firstHitSeconds ?? 0) * 1000) / 1000);
+        this.beatsPerBar = String(midi.beatsPerBar ?? defaultBeatsPerBar);
     }
 
     onOpen(): void {

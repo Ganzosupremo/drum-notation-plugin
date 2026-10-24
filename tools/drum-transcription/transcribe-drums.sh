@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Separa la batería de una canción y la transcribe a un .mid para el plugin.
-# Uso: ./transcribe-drums.sh cancion.mp3 [--output-dir DIR] [--bpm 66] [--no-separate] [--keep-stem]
+# Uso: ./transcribe-drums.sh cancion.mp3 [--output-dir DIR] [--bpm 66] [--no-separate] [--keep-stem] [--no-warp]
 set -euo pipefail
 
 image=drum-transcription
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ $# -lt 1 ]]; then
-    echo "Uso: $0 AUDIO [--output-dir DIR] [--bpm BPM] [--no-separate] [--keep-stem]" >&2
+    echo "Uso: $0 AUDIO [--output-dir DIR] [--bpm BPM] [--no-separate] [--keep-stem] [--no-warp]" >&2
     exit 1
 fi
 

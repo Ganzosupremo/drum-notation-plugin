@@ -136,7 +136,7 @@ export function transcribedEventsToDrumSource(
     });
 
     const grid = settings.subdivisionsPerBeat === 4 ? 16 : 8;
-    const lines = [`meter: ${settings.beatsPerBar}/4`, `grid: ${grid}`, `tempo: ${settings.tempoBpm}`];
+    const lines = [`meter: ${settings.beatsPerBar}/4`, `grid: ${grid}`, `tempo: ${Math.round(settings.tempoBpm)}`];
     [...lanes.entries()]
         .sort((left, right) => left[1].order - right[1].order)
         .forEach(([name, lane]) => {
