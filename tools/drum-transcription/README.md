@@ -5,8 +5,14 @@ Convierte una canción en un `.mid` de batería listo para el comando del plugin
 
 1. **Demucs** (`htdemucs`) separa la batería del resto de la mezcla.
 2. **Omnizart** transcribe esa pista de batería a notas MIDI.
-3. El script reescribe el MIDI en el canal 10 (General MIDI) con un tempo
-   estimado, para que el diálogo de importación ya venga con un BPM razonable.
+3. **madmom** sigue los pulsos y los compases de la batería. Con eso el script
+   calcula el tempo, el compás (3/4 o 4/4) y el primer tiempo fuerte, y mueve
+   cada golpe a una rejilla estable que empieza en ese tiempo 1. Así el plugin
+   puede cuantizar toda la canción con un solo tempo aunque el batería acelere
+   o frene.
+4. El MIDI se escribe en el canal 10 (General MIDI) con el tempo, el compás y
+   una marca `downbeat`, que el diálogo de importación usa como valores
+   iniciales.
 
 Todo corre dentro de un contenedor: no hace falta instalar Python, TensorFlow ni
 PyTorch en Windows. Nada de esto se empaqueta con el plugin.
@@ -43,7 +49,8 @@ El resultado queda junto al audio como `cancion.drums.mid`. Opciones:
 | Opción | Qué hace |
 | --- | --- |
 | `-OutDir "C:\ruta\Vault\midi"` | Guarda el `.mid` en otra carpeta, por ejemplo dentro del vault. |
-| `-Bpm 66` | Usa ese tempo en lugar del estimado. Recomendado si lo conoces. |
+| `-Bpm 66` | Usa ese tempo en lugar del estimado y guía al detector de pulsos. Úsalo si el tempo sale al doble o a la mitad. |
+| `-NoWarp` | Conserva los tiempos originales de los golpes (alineados con el audio) en vez de la rejilla estable. |
 | `-KeepStem` | Guarda también la batería separada como `cancion.drums.wav` para escucharla. |
 | `-NoSeparate` | El audio ya es solo batería: se salta Demucs. |
 | `-Rebuild` | Vuelve a construir la imagen (tras actualizar estos archivos). |
@@ -66,9 +73,13 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 
 1. Copia `cancion.drums.mid` a tu vault (o usa `-OutDir` para escribirlo ahí).
 2. En una nota, ejecuta **Insert drum notation from a .mid file** y elige el archivo.
-3. Revisa el tempo y el **primer tiempo fuerte (segundos)**. El plugin propone
-   el primer golpe detectado, pero si la canción empieza con una anacrusa o un
-   fill hay que ajustarlo al tiempo 1 del primer compás.
+3. El diálogo ya trae el tempo, el primer tiempo fuerte (0 con la rejilla
+   estable) y los tiempos por compás. Si el tempo sale al doble o a la mitad,
+   vuelve a transcribir con `-Bpm`.
+
+Usa siempre la batería **completa** (todas las piezas mezcladas): Omnizart
+espera un kit entero y, con un stem suelto como solo el bombo, se inventa los
+demás golpes.
 
 Para canciones largas suele ir mejor recortar antes un fragmento (por ejemplo
 con `ffmpeg -ss 120 -t 20 -i cancion.mp3 fragmento.wav`) y transcribir solo eso.
@@ -97,4 +108,4 @@ docker build -t drum-transcription .
 docker run --rm -v "C:\Musica:/in:ro" -v "C:\Musica:/out" drum-transcription /in/cancion.mp3 --bpm 66
 ```
 
-Argumentos del contenedor: `AUDIO [--output-dir DIR] [--bpm BPM] [--no-separate] [--keep-stem]`.
+Argumentos del contenedor: `AUDIO [--output-dir DIR] [--bpm BPM] [--no-separate] [--keep-stem] [--no-warp]`.

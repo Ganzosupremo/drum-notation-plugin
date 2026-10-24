@@ -35,6 +35,10 @@ export interface MidiDrumEvents {
     initialTempoBpm: number;
     /** Time of the first mapped hit, a reasonable default for the first downbeat. */
     firstHitSeconds?: number;
+    /** Time of a "downbeat" text or marker event, written by tools/drum-transcription. */
+    downbeatSeconds?: number;
+    /** Numerator of the file's time signature, when it declares one. */
+    beatsPerBar?: number;
     /** Count of ignored hits by MIDI note number. */
     unmappedNotes: Map<number, number>;
     usedDrumChannelOnly: boolean;
@@ -62,6 +66,8 @@ export function midiToDrumEvents(midi: ParsedMidiFile): MidiDrumEvents {
         events,
         initialTempoBpm: Math.round(midiTempoBpm(midi.tempos[0]!)),
         firstHitSeconds: events[0]?.timeSeconds,
+        downbeatSeconds: midi.markers.find(marker => marker.text.trim().toLowerCase() === "downbeat")?.timeSeconds,
+        beatsPerBar: midi.beatsPerBar,
         unmappedNotes,
         usedDrumChannelOnly,
     };

@@ -10,12 +10,27 @@ export interface MidiTempoChange {
     microsecondsPerQuarter: number;
 }
 
+export interface MidiMarker {
+    timeSeconds: number;
+    text: string;
+}
+
 export interface ParsedMidiFile {
     format: number;
     ticksPerQuarter: number;
     notes: MidiNoteOn[];
     /** Tempo map sorted by tick; always starts at tick 0 (120 BPM when the file declares none). */
     tempos: MidiTempoChange[];
+    /** Text and marker meta events, sorted by time. */
+    markers: MidiMarker[];
+    /** Numerator of the first time signature, when the file declares one. */
+    beatsPerBar?: number;
+}
+
+interface RawText {
+    tick: number;
+    order: number;
+    text: string;
 }
 
 interface RawNoteOn {
@@ -27,6 +42,9 @@ interface RawNoteOn {
 }
 
 const DEFAULT_MICROSECONDS_PER_QUARTER = 500_000;
+const TEXT_EVENT = 0x01;
+const MARKER_EVENT = 0x06;
+const TIME_SIGNATURE_EVENT = 0x58;
 
 class ByteReader {
     position = 0;
@@ -78,6 +96,8 @@ function readTrack(
     end: number,
     notes: RawNoteOn[],
     tempos: (MidiTempoChange & { order: number })[],
+    texts: RawText[],
+    timeSignatures: RawText[],
 ): void {
     const reader = new ByteReader(bytes, end);
     reader.position = start;
@@ -98,6 +118,11 @@ function readTrack(
             if (type === 0x51 && length === 3) {
                 const microsecondsPerQuarter = (reader.byte() << 16) | (reader.byte() << 8) | reader.byte();
                 tempos.push({ tick, microsecondsPerQuarter, order: tempos.length });
+            } else if ((type === TEXT_EVENT || type === MARKER_EVENT) && length > 0) {
+                texts.push({ tick, order: texts.length, text: reader.ascii(length) });
+            } else if (type === TIME_SIGNATURE_EVENT && length === 4) {
+                timeSignatures.push({ tick, order: timeSignatures.length, text: String(reader.byte()) });
+                reader.skip(3);
             } else {
                 reader.skip(length);
             }
@@ -162,12 +187,14 @@ export function parseMidiFile(data: ArrayBuffer | Uint8Array): ParsedMidiFile {
 
     const notes: RawNoteOn[] = [];
     const tempos: (MidiTempoChange & { order: number })[] = [];
+    const texts: RawText[] = [];
+    const timeSignatures: RawText[] = [];
     for (let track = 0; track < trackCount && reader.position + 8 <= bytes.length; track++) {
         const chunkType = reader.ascii(4);
         const length = reader.uint32();
         const start = reader.position;
         const end = Math.min(start + length, bytes.length);
-        if (chunkType === "MTrk") readTrack(bytes, start, end, notes, tempos);
+        if (chunkType === "MTrk") readTrack(bytes, start, end, notes, tempos, texts, timeSignatures);
         else track--;
         reader.position = end;
     }
@@ -176,6 +203,8 @@ export function parseMidiFile(data: ArrayBuffer | Uint8Array): ParsedMidiFile {
     const tempoMap: MidiTempoChange[] = tempos.map(({ tick, microsecondsPerQuarter }) => ({ tick, microsecondsPerQuarter }));
     if (tempoMap[0]?.tick !== 0) tempoMap.unshift({ tick: 0, microsecondsPerQuarter: DEFAULT_MICROSECONDS_PER_QUARTER });
     const toSeconds = tickToSeconds(tempoMap, division);
+    const byTick = (left: RawText, right: RawText) => left.tick - right.tick || left.order - right.order;
+    const beatsPerBar = Number(timeSignatures.sort(byTick)[0]?.text);
 
     return {
         format,
@@ -184,6 +213,8 @@ export function parseMidiFile(data: ArrayBuffer | Uint8Array): ParsedMidiFile {
         notes: notes
             .sort((left, right) => left.tick - right.tick || left.order - right.order)
             .map(note => ({ timeSeconds: toSeconds(note.tick), channel: note.channel, note: note.note, velocity: note.velocity })),
+        markers: texts.sort(byTick).map(text => ({ timeSeconds: toSeconds(text.tick), text: text.text })),
+        beatsPerBar: beatsPerBar > 0 ? beatsPerBar : undefined,
     };
 }
 
