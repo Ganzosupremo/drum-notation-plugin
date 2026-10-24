@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0-beta.3
+
+- MIDI import prefills the first downbeat from a `downbeat` text or marker event and the beats per bar from the file's time signature. `tools/drum-transcription` now writes both.
+- Fixes an invalid `tempo:` directive when a fractional tempo was entered in the import dialog.
+
 ## 1.2.0-beta.2
 
 - Fixes silent or stalled playback on long scores such as imported songs: hits are now scheduled a second and a half ahead while playing instead of all at once.

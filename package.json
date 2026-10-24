@@ -1,6 +1,6 @@
 {
         "name": "drum-notation-renderer",
-        "version": "1.2.0-beta.2",
+        "version": "1.2.0-beta.3",
         "description": "Modern, groove-oriented drum notation for Obsidian.",
         "main": "main.js",
         "type": "module",

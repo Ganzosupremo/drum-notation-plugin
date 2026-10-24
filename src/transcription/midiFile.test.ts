@@ -79,6 +79,23 @@ describe("parseMidiFile", () => {
         assert.deepEqual(parsed.notes, [{ timeSeconds: 0.5, channel: 9, note: 49, velocity: 127 }]);
     });
 
+    test("reads text and marker events and the first time signature", () => {
+        const text = (delta: number, type: number, value: string) =>
+            [...variableLength(delta), 0xff, type, value.length, ...[...value].map(character => character.charCodeAt(0))];
+        const file = midiFile(0, 480, [[
+            ...tempoEvent(0, 60),
+            0x00, 0xff, 0x58, 0x04, 3, 2, 24, 8,
+            ...text(480, 0x01, "downbeat"),
+            ...text(480, 0x06, "chorus"),
+            ...variableLength(0), 0xff, 0x58, 0x04, 4, 2, 24, 8,
+        ]]);
+
+        const parsed = parseMidiFile(file);
+
+        assert.deepEqual(parsed.markers, [{ timeSeconds: 1, text: "downbeat" }, { timeSeconds: 2, text: "chorus" }]);
+        assert.equal(parsed.beatsPerBar, 3);
+    });
+
     test("rejects files that are not tick-based MIDI", () => {
         assert.throws(() => parseMidiFile(new TextEncoder().encode("RIFF0000WAVEfmt ")), /Not a MIDI file/);
         const smpte = midiFile(0, 0xe728, [[]]);
@@ -107,6 +124,22 @@ describe("midiToDrumEvents", () => {
         assert.deepEqual(result.events.map(event => event.instrument), ["kick", "snare"]);
         assert.equal(result.events[0]!.confidence, 1);
         assert.deepEqual([...result.unmappedNotes], [[39, 1]]);
+    });
+
+    test("uses a downbeat marker and the time signature as import defaults", () => {
+        const file = midiFile(0, 480, [[
+            ...tempoEvent(0, 120),
+            0x00, 0xff, 0x58, 0x04, 3, 2, 24, 8,
+            0x00, 0x99, 42, 100,
+            ...variableLength(240), 0xff, 0x01, 0x08, ...[..."downbeat"].map(character => character.charCodeAt(0)),
+            0x00, 0x99, 36, 100,
+        ]]);
+
+        const result = midiToDrumEvents(parseMidiFile(file));
+
+        assert.equal(result.firstHitSeconds, 0);
+        assert.equal(result.downbeatSeconds, 0.25);
+        assert.equal(result.beatsPerBar, 3);
     });
 
     test("treats every channel as drums when channel 10 is unused and yields parseable source", () => {
